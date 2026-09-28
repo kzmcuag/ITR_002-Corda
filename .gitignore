@@ -1,0 +1,5 @@
+node_modules/
+.vite/
+0_old/
+
+*.glb

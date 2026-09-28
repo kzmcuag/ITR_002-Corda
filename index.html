@@ -1,0 +1,3012 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Corda v0.25 — Inter / Sample Spacing</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+
+/* ==================================================
+   ITR DESIGN SETTINGS — edit this block for styling
+   ================================================== */
+:root {
+    --itr-background: #111111;
+    --itr-text: #eeeeee;
+    --itr-text-muted: #aaaaaa;
+    --itr-text-faint: #777777;
+    --itr-panel-line: rgba(255,255,255,0.18);
+    --itr-control-border: rgba(255,255,255,0.28);
+    --itr-control-background: rgba(255,255,255,0.05);
+    --itr-control-text: #bbbbbb;
+    --itr-active: #ffffff;
+    --itr-active-ui: #ffffff;
+    --itr-active-soft: rgba(255,255,255,0.12);
+    --itr-bow-glow: rgba(255,255,255,0.35);
+
+    --itr-font: "Inter", Arial, sans-serif;
+    --itr-ui-top: 26px;
+    --itr-ui-left: 28px;
+    --itr-ui-width: 220px;
+    --itr-ui-line-height: 1.65;
+    --itr-label-size: 11px;
+    --itr-section-size: 10px;
+    --itr-bow-width: 2px;
+    --itr-bow-point-size: 8px;
+}
+
+
+html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+
+    background: var(--itr-background);
+    color: var(--itr-text);
+
+    font-family: var(--itr-font);
+}
+
+#info {
+    position: absolute;
+    top: var(--itr-ui-top);
+    left: var(--itr-ui-left);
+
+    z-index: 10;
+    pointer-events: none;
+
+    line-height: var(--itr-ui-line-height);
+    font-size: 12px;
+    font-weight: 400;
+}
+
+#status {
+    font-variant-numeric: tabular-nums;
+    margin-top: 14px;
+    color: var(--itr-text-muted);
+}
+
+
+#modelRow{
+    display:flex;
+    align-items:baseline;
+    gap:12px;
+}
+#replaceModel{
+    appearance:none;
+    border:0;
+    padding:0;
+    margin:0;
+    background:none;
+    color:var(--itr-text-muted);
+    font:inherit;
+    font-size:inherit;
+    text-decoration:underline;
+    text-underline-offset:2px;
+    cursor:pointer;
+}
+#replaceModel:hover{
+    color:var(--itr-text);
+}
+
+#dropMessage {
+    cursor: pointer;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    width: min(420px, calc(100vw - 64px));
+    height: 112px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid rgba(255,255,255,0.28);
+    color: var(--itr-text-muted);
+
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    line-height: 1;
+
+    pointer-events: auto;
+    z-index: 20;
+    user-select: none;
+}
+
+canvas {
+    display: block;
+}
+
+
+#spaceControls{
+    margin-top:18px;
+    padding-top:0;
+    border-top:0;
+    width:var(--itr-ui-width);
+}
+
+.spaceTitle{
+    font-size:var(--itr-section-size);
+    letter-spacing:0.14em;
+    opacity:0.65;
+    margin-bottom:9px;
+}
+
+.spaceRow{
+    display:grid;
+    grid-template-columns:58px 1fr 34px;
+    align-items:center;
+    gap:8px;
+    margin:7px 0;
+    font-size:var(--itr-label-size);
+}
+
+.spaceRow input[type="range"]{
+    -webkit-appearance:none;
+    appearance:none;
+    width:100%;
+    height:1px;
+    margin:0;
+    background:rgba(255,255,255,0.35);
+    outline:none;
+    cursor:pointer;
+}
+
+.spaceRow input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    appearance:none;
+    width:1px;
+    height:9px;
+    border:0;
+    border-radius:0;
+    background:#ffffff;
+    cursor:pointer;
+}
+
+.spaceRow input[type="range"]::-moz-range-thumb{
+    width:1px;
+    height:9px;
+    border:0;
+    border-radius:0;
+    background:#ffffff;
+    cursor:pointer;
+}
+
+.spaceRow input[type="range"]::-moz-range-track{
+    height:1px;
+    border:0;
+    background:rgba(255,255,255,0.35);
+}
+
+.spaceValue{
+    text-align:right;
+    font-variant-numeric:tabular-nums;
+    opacity:0.8;
+}
+
+
+/* v0.6.2: UI controls must receive pointer input before the 3D canvas. */
+#info{
+    pointer-events:auto;
+    z-index:20;
+}
+
+#spaceControls,
+#spaceControls *{
+    pointer-events:auto;
+}
+
+#spaceControls input[type="range"]{
+    cursor:pointer;
+    touch-action:none;
+}
+
+
+#performanceControls{
+    margin-top:12px;
+    padding-top:10px;
+    border-top:1px solid var(--itr-panel-line);
+    width:var(--itr-ui-width);
+    pointer-events:auto;
+}
+.modeToggle{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px;
+}
+.modeButton{
+    appearance:none;
+    border:1px solid var(--itr-control-border);
+    background:var(--itr-control-background);
+    color:var(--itr-control-text);
+    padding:6px 8px;
+    font:inherit;
+    font-size:var(--itr-label-size);
+    cursor:pointer;
+}
+.modeButton.active{
+    border-color:var(--itr-active-ui);
+    color:var(--itr-text);
+    background:var(--itr-active-soft);
+}
+#bowActivePoint{
+ position:fixed;width:var(--itr-bow-point-size);height:var(--itr-bow-point-size);border-radius:50%;
+ background:var(--itr-active);transform:translate(-50%,-50%);
+ pointer-events:none;z-index:31;display:none;
+}
+#bow{
+    position:fixed;
+    width:120px;
+    height:var(--itr-bow-width);
+    background:var(--itr-active-ui);
+    transform:translate(-50%,-50%);
+    transform-origin:center;
+    pointer-events:none;
+    z-index:15;
+    display:none;
+    box-shadow:0 0 5px var(--itr-bow-glow);
+}
+
+</style>
+</head>
+
+
+<body>
+
+<div id="info">
+
+<strong>CORDA v0.25</strong><br>
+
+Hover / move: Pizz / Strum<br>
+1st click: Bow start<br>
+2nd click: Bow end → Arco<br>
+Click in Arco: Remove Bow → Pizz<br>
+Right drag: Orbit<br>
+Wheel: Zoom
+
+<div id="status">
+<div id="modelRow"><span id="fileStatus">Model: N/A</span><button id="replaceModel" type="button" hidden>Replace</button></div>
+<div id="lengthStatus">Length: —</div>
+<div id="frequencyStatus">Frequency: —</div>
+</div>
+
+<div id="spaceControls">
+    <div class="spaceTitle">SPACE</div>
+
+    <div class="spaceRow">
+        <span>Reverb</span>
+        <input
+            id="reverbSlider"
+            type="range"
+            min="0"
+            max="50"
+            value="20"
+            step="1"
+        >
+        <span
+            id="reverbValue"
+            class="spaceValue"
+        >20%</span>
+    </div>
+
+    <div class="spaceRow">
+        <span>Delay</span>
+        <input
+            id="delaySlider"
+            type="range"
+            min="0"
+            max="50"
+            value="13"
+            step="1"
+        >
+        <span
+            id="delayValue"
+            class="spaceValue"
+        >13%</span>
+    </div>
+</div>
+
+</div>
+
+
+<div id="bow"></div>
+<div id="bowActivePoint"></div>
+
+<div id="dropMessage" role="button" tabindex="0" aria-label="Load GLB or GLTF model">
+Drop .glb / .gltf here<br>or click to select a file
+</div>
+<input id="modelFileInput" type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" hidden>
+
+
+<script type="module">
+
+import * as THREE from "three";
+
+import { OrbitControls }
+from "three/addons/controls/OrbitControls.js";
+
+import { GLTFLoader }
+from "three/addons/loaders/GLTFLoader.js";
+
+
+// Shared GLTF loader for dropped .glb / .gltf models.
+const loader = new GLTFLoader();
+
+// ==================================================
+// ITR 3D DESIGN SETTINGS — edit these values only
+// ==================================================
+
+const ITR_DESIGN = {
+    background: 0x111111,
+    string: 0xaaaaaa,
+    active: 0xffffff,
+    gridMajor: 0x444444,
+    gridMinor: 0x222222,
+    gridSize: 10,
+    gridDivisions: 10
+};
+
+// ==================================================
+// SCENE
+// ==================================================
+
+const scene = new THREE.Scene();
+
+scene.background =
+    new THREE.Color(ITR_DESIGN.background);
+
+
+const camera =
+    new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth /
+        window.innerHeight,
+        0.01,
+        10000
+    );
+
+camera.position.set(6,5,8);
+
+
+// ==================================================
+// RENDERER
+// ==================================================
+
+const renderer =
+    new THREE.WebGLRenderer({
+        antialias:true
+    });
+
+renderer.setPixelRatio(
+    window.devicePixelRatio
+);
+
+renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+);
+
+document.body.appendChild(
+    renderer.domElement
+);
+
+
+// ==================================================
+// CONTROLS
+// ==================================================
+
+const controls =
+    new OrbitControls(
+        camera,
+        renderer.domElement
+    );
+
+controls.enableDamping = true;
+
+// Corda navigation: left = pluck/strum, right = orbit, wheel = zoom
+controls.enablePan = false;
+controls.enableZoom = true;
+controls.mouseButtons.LEFT = null;
+controls.mouseButtons.MIDDLE = null;
+controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
+
+renderer.domElement.addEventListener(
+    "contextmenu",
+    event=>event.preventDefault()
+);
+
+
+// ==================================================
+// GRID
+// ==================================================
+
+const grid =
+    new THREE.GridHelper(
+        ITR_DESIGN.gridSize,
+        ITR_DESIGN.gridDivisions,
+        ITR_DESIGN.gridMajor,
+        ITR_DESIGN.gridMinor
+    );
+
+// Grid removed from Corda v0.15 onward.
+
+
+// ==================================================
+// CORDA EDGES
+// ==================================================
+
+let strings = [];
+
+let edgeGroup =
+    new THREE.Group();
+
+scene.add(edgeGroup);
+
+
+function clearStrings(){
+
+    edgeGroup.clear();
+
+    strings = [];
+
+}
+
+
+// ==================================================
+// FREQUENCY MAPPING
+// ==================================================
+
+let referenceLength = 1.0;
+
+const referenceFrequency = 220;
+
+
+function lengthToFrequency(length){
+
+    return (
+        referenceFrequency *
+        referenceLength /
+        length
+    );
+
+}
+
+
+// ==================================================
+// AUDIO / MASTER EFFECT BUS  (v0.6)
+//
+// Every plucked string now feeds a common audio bus:
+//
+// Pizz source
+//    ├─ Dry ───────────────────────────────┐
+//    ├─ Delay → feedback → wet ───────────┤
+//    └─ Reverb (Convolver) → wet ─────────┤
+//                                             ↓
+//                                          Master
+//
+// The 3D pick and contact logic are unchanged.
+// ==================================================
+
+let audioContext = null;
+
+let masterGain = null;
+let dryGain = null;
+
+let delayNode = null;
+let delayWetGain = null;
+let delayFeedbackGain = null;
+
+let reverbNode = null;
+let reverbWetGain = null;
+
+
+// User-adjustable SPACE mix.
+// Values correspond directly to the UI percentages.
+
+let reverbMix = 0.20;
+let delayMix = 0.13;
+
+
+function createReverbImpulse(
+    context,
+    duration = 1.8,
+    decay = 2.8
+){
+
+    const rate =
+        context.sampleRate;
+
+    const length =
+        Math.floor(
+            rate * duration
+        );
+
+    const impulse =
+        context.createBuffer(
+            2,
+            length,
+            rate
+        );
+
+
+    for(
+        let channel=0;
+        channel<2;
+        channel++
+    ){
+
+        const data =
+            impulse.getChannelData(
+                channel
+            );
+
+        for(
+            let i=0;
+            i<length;
+            i++
+        ){
+
+            const envelope =
+                Math.pow(
+                    1 - i/length,
+                    decay
+                );
+
+            data[i] =
+                (Math.random()*2-1) *
+                envelope;
+
+        }
+
+    }
+
+
+    return impulse;
+
+}
+
+
+function buildEffectBus(){
+
+    masterGain =
+        audioContext.createGain();
+
+    dryGain =
+        audioContext.createGain();
+
+    delayNode =
+        audioContext.createDelay(
+            1.0
+        );
+
+    delayWetGain =
+        audioContext.createGain();
+
+    delayFeedbackGain =
+        audioContext.createGain();
+
+    reverbNode =
+        audioContext.createConvolver();
+
+    reverbWetGain =
+        audioContext.createGain();
+
+
+    // Conservative defaults:
+    // keep the attack clear, add a small room/tail.
+
+    masterGain.gain.value = 0.82;
+    dryGain.gain.value = 0.82;
+
+    delayNode.delayTime.value = 0.19;
+    delayWetGain.gain.value = delayMix;
+    delayFeedbackGain.gain.value = 0.22;
+
+    reverbWetGain.gain.value = reverbMix;
+
+    reverbNode.buffer =
+        createReverbImpulse(
+            audioContext,
+            1.8,
+            2.8
+        );
+
+
+    // Dry path
+
+    dryGain.connect(
+        masterGain
+    );
+
+
+    // Delay path + feedback loop
+
+    delayNode.connect(
+        delayWetGain
+    );
+
+    delayWetGain.connect(
+        masterGain
+    );
+
+    delayNode.connect(
+        delayFeedbackGain
+    );
+
+    delayFeedbackGain.connect(
+        delayNode
+    );
+
+
+    // Reverb path
+
+    reverbNode.connect(
+        reverbWetGain
+    );
+
+    reverbWetGain.connect(
+        masterGain
+    );
+
+
+    masterGain.connect(
+        audioContext.destination
+    );
+
+}
+
+
+function connectToEffectBus(node){
+
+    node.connect(
+        dryGain
+    );
+
+    node.connect(
+        delayNode
+    );
+
+    node.connect(
+        reverbNode
+    );
+
+}
+
+
+function initAudio(){
+
+    if(!audioContext){
+
+        audioContext =
+            new (
+                window.AudioContext ||
+                window.webkitAudioContext
+            )();
+
+        buildEffectBus();
+
+    }
+
+    if(audioContext.state === "suspended"){
+
+        audioContext.resume();
+
+    }
+
+}
+
+
+// ==================================================
+// KARPLUS–STRONG
+// ==================================================
+
+function pluck(frequency){
+
+    initAudio();
+
+    // Avoid pathological frequencies
+
+    frequency =
+        THREE.MathUtils.clamp(
+            frequency,
+            30,
+            5000
+        );
+
+
+    const sampleRate =
+        audioContext.sampleRate;
+
+    const duration = 3;
+
+    const buffer =
+        audioContext.createBuffer(
+            1,
+            sampleRate * duration,
+            sampleRate
+        );
+
+    const data =
+        buffer.getChannelData(0);
+
+
+    const delay =
+        Math.max(
+            2,
+            Math.round(
+                sampleRate /
+                frequency
+            )
+        );
+
+
+    // excitation
+
+    for(
+        let i=0;
+        i<delay &&
+        i<data.length;
+        i++
+    ){
+
+        data[i] =
+            Math.random()*2-1;
+
+    }
+
+
+    // feedback loop
+
+    const decay = 0.996;
+
+    for(
+        let i=delay;
+        i<data.length;
+        i++
+    ){
+
+        const a =
+            data[i-delay];
+
+        const b =
+            data[
+                Math.max(
+                    0,
+                    i-delay-1
+                )
+            ];
+
+        data[i] =
+            decay *
+            0.5 *
+            (a+b);
+
+    }
+
+
+    const source =
+        audioContext
+        .createBufferSource();
+
+    source.buffer = buffer;
+
+
+    const gain =
+        audioContext
+        .createGain();
+
+    gain.gain.value = 0.22;
+
+
+    source.connect(gain);
+
+    // v0.6: route every string through the shared
+    // dry / delay / reverb bus instead of directly
+    // to the speakers.
+
+    connectToEffectBus(
+        gain
+    );
+
+    source.start();
+
+}
+
+
+
+// ==================================================
+// ARCO SYNTHESIS  (v0.7)
+//
+// A lightweight sustained bowed-string approximation:
+// oscillator + filtered noise excitation + resonant
+// filtering. Each contacted string owns one voice.
+// ==================================================
+
+const arcoVoices = new Map();
+
+function startArco(string){
+
+    if(arcoVoices.has(string))
+        return;
+
+    initAudio();
+
+    const frequency =
+        THREE.MathUtils.clamp(
+            lengthToFrequency(
+                string.userData.length
+            ),
+            30,
+            5000
+        );
+
+    const now =
+        audioContext.currentTime;
+
+    const osc =
+        audioContext.createOscillator();
+
+    osc.type = "sawtooth";
+    osc.frequency.value = frequency;
+
+    const bodyFilter =
+        audioContext.createBiquadFilter();
+
+    bodyFilter.type = "lowpass";
+    bodyFilter.frequency.value =
+        Math.min(7000, frequency*5+900);
+
+    bodyFilter.Q.value = 1.2;
+
+    const voiceGain =
+        audioContext.createGain();
+
+    voiceGain.gain.setValueAtTime(
+        0.0001,
+        now
+    );
+
+    voiceGain.gain.exponentialRampToValueAtTime(
+        0.00012,
+        now+0.10
+    );
+
+    osc.connect(bodyFilter);
+    bodyFilter.connect(voiceGain);
+    connectToEffectBus(voiceGain);
+
+    osc.start();
+
+    arcoVoices.set(
+        string,
+        {
+            osc,
+            bodyFilter,
+            voiceGain,
+            smoothedExcitation:0
+        }
+    );
+
+    string.material.color.set(
+        ITR_DESIGN.active
+    );
+
+    document.getElementById("lengthStatus").textContent =
+        "Length: " + string.userData.length.toFixed(4);
+    document.getElementById("frequencyStatus").textContent =
+        "Frequency: " + frequency.toFixed(2) + " Hz";
+}
+
+function stopArco(string){
+
+    const voice =
+        arcoVoices.get(string);
+
+    if(!voice)
+        return;
+
+    const now =
+        audioContext.currentTime;
+
+
+    // v0.7.3 RELEASE
+    //
+    // Bow excitation stops immediately, but the virtual
+    // string is allowed to resonate after contact ends.
+    // Longer strings receive a slightly longer release.
+
+    const relativeLength =
+        THREE.MathUtils.clamp(
+            string.userData.length /
+            Math.max(
+                referenceLength,
+                0.000001
+            ),
+            0.5,
+            2.0
+        );
+
+    const releaseTime =
+        THREE.MathUtils.lerp(
+            0.9,
+            1.8,
+            (relativeLength-0.5)/1.5
+        );
+
+
+    voice.voiceGain.gain
+    .cancelScheduledValues(now);
+
+    const currentGain =
+        Math.max(
+            voice.voiceGain.gain.value,
+            0.0001
+        );
+
+    voice.voiceGain.gain
+    .setValueAtTime(
+        currentGain,
+        now
+    );
+
+    // First: a short natural drop when the bow leaves.
+    voice.voiceGain.gain
+    .exponentialRampToValueAtTime(
+        Math.max(
+            currentGain * 0.42,
+            0.0002
+        ),
+        now + 0.16
+    );
+
+    // Second: resonant decay of the string itself.
+    voice.voiceGain.gain
+    .exponentialRampToValueAtTime(
+        0.0001,
+        now + releaseTime
+    );
+
+
+    // Keep the oscillator alive through the string
+    // release; the shared Reverb/Delay bus can then
+    // continue naturally after the dry voice fades.
+
+    voice.osc.stop(
+        now +
+        releaseTime +
+        0.12
+    );
+
+    arcoVoices.delete(string);
+
+
+    // Keep the string orange briefly during the
+    // acoustic release, then restore its normal color.
+
+    setTimeout(
+        ()=>{
+
+            if(
+                !arcoVoices.has(string) &&
+                !activeFlashTimers.has(string)
+            ){
+                string.material.color.set(
+                    ITR_DESIGN.string
+                );
+            }
+
+        },
+        Math.min(
+            releaseTime * 350,
+            500
+        )
+    );
+
+}
+
+function stopAllArco(){
+
+    for(const string of [
+        ...arcoVoices.keys()
+    ]){
+        stopArco(string);
+    }
+}
+
+// ==================================================
+// EDGE EXTRACTION
+// ==================================================
+
+function extractEdges(object){
+
+    clearStrings();
+
+
+    object.updateMatrixWorld(true);
+
+
+    object.traverse(child=>{
+
+        if(!child.isMesh)
+            return;
+
+
+        const edgeGeometry =
+            new THREE.EdgesGeometry(
+                child.geometry,
+                15
+            );
+
+
+        const position =
+            edgeGeometry.attributes.position;
+
+
+        for(
+            let i=0;
+            i<position.count;
+            i+=2
+        ){
+
+            const a =
+                new THREE.Vector3()
+                .fromBufferAttribute(
+                    position,
+                    i
+                );
+
+            const b =
+                new THREE.Vector3()
+                .fromBufferAttribute(
+                    position,
+                    i+1
+                );
+
+
+            // local → world
+
+            a.applyMatrix4(
+                child.matrixWorld
+            );
+
+            b.applyMatrix4(
+                child.matrixWorld
+            );
+
+
+            const length =
+                a.distanceTo(b);
+
+
+            if(length < 0.000001)
+                continue;
+
+
+            const geometry =
+                new THREE.BufferGeometry()
+                .setFromPoints([a,b]);
+
+
+            const material =
+                new THREE.LineBasicMaterial({
+                    color:ITR_DESIGN.string
+                });
+
+
+            const line =
+                new THREE.Line(
+                    geometry,
+                    material
+                );
+
+
+            line.userData.length =
+                length;
+
+
+            edgeGroup.add(line);
+
+            strings.push(line);
+
+        }
+
+    });
+
+
+    autoReferenceLength();
+
+    fitCameraToStrings();
+
+}
+
+
+// ==================================================
+// AUTOMATIC REFERENCE LENGTH
+// ==================================================
+
+function autoReferenceLength(){
+
+    if(strings.length === 0)
+        return;
+
+
+    const lengths =
+        strings
+        .map(
+            s=>s.userData.length
+        )
+        .sort(
+            (a,b)=>a-b
+        );
+
+
+    // median edge = 220 Hz
+
+    referenceLength =
+        lengths[
+            Math.floor(
+                lengths.length/2
+            )
+        ];
+
+}
+
+
+// ==================================================
+// CAMERA FIT
+// ==================================================
+
+function fitCameraToStrings(){
+
+    if(strings.length === 0)
+        return;
+
+
+    const box =
+        new THREE.Box3()
+        .setFromObject(edgeGroup);
+
+
+    const center =
+        box.getCenter(
+            new THREE.Vector3()
+        );
+
+
+    const size =
+        box.getSize(
+            new THREE.Vector3()
+        );
+
+
+    const maxSize =
+        Math.max(
+            size.x,
+            size.y,
+            size.z
+        );
+
+
+    camera.position.set(
+        center.x + maxSize,
+        center.y + maxSize*0.7,
+        center.z + maxSize
+    );
+
+
+    camera.near =
+        Math.max(
+            maxSize/10000,
+            0.001
+        );
+
+    camera.far =
+        maxSize*100;
+
+
+    camera.updateProjectionMatrix();
+
+
+    controls.target.copy(center);
+
+    controls.update();
+
+}
+
+
+// ==================================================
+// RAYCASTING
+// ==================================================
+
+const raycaster =
+    new THREE.Raycaster();
+
+raycaster.params.Line.threshold =
+    0.08;
+
+
+const mouse =
+    new THREE.Vector2();
+
+
+function updateMouse(event){
+
+    const rect =
+        renderer.domElement
+        .getBoundingClientRect();
+
+
+    mouse.x =
+        (
+            (
+                event.clientX -
+                rect.left
+            ) /
+            rect.width
+        ) * 2 - 1;
+
+
+    mouse.y =
+        -(
+            (
+                event.clientY -
+                rect.top
+            ) /
+            rect.height
+        ) * 2 + 1;
+
+}
+
+
+// ==================================================
+// SPACE UI  (v0.6.1)
+// ==================================================
+
+const reverbSlider =
+    document.getElementById(
+        "reverbSlider"
+    );
+
+const delaySlider =
+    document.getElementById(
+        "delaySlider"
+    );
+
+const reverbValue =
+    document.getElementById(
+        "reverbValue"
+    );
+
+const delayValue =
+    document.getElementById(
+        "delayValue"
+    );
+
+
+// Keep UI gestures out of the 3D pluck/strum/orbit system.
+// stopPropagation is enough: native range dragging still works.
+
+const spaceControls =
+    document.getElementById(
+        "spaceControls"
+    );
+
+const performanceControls =
+    document.getElementById(
+        "performanceControls"
+    );
+
+[spaceControls, performanceControls]
+.filter(Boolean)
+.forEach(panel=>{
+
+[
+    "pointerdown",
+    "pointermove",
+    "pointerup",
+    "pointercancel",
+    "mousedown",
+    "mousemove",
+    "mouseup",
+    "click",
+    "dblclick",
+    "contextmenu"
+].forEach(type=>{
+
+    panel.addEventListener(
+        type,
+        event=>{
+
+            event.stopPropagation();
+
+        }
+    );
+
+});
+
+panel.addEventListener(
+    "wheel",
+    event=>{
+
+        event.stopPropagation();
+
+    },
+    {passive:true}
+);
+
+}); // end UI panels
+
+
+function setAudioParamSmoothly(
+    parameter,
+    value
+){
+
+    if(!audioContext)
+        return;
+
+    parameter.cancelScheduledValues(
+        audioContext.currentTime
+    );
+
+    parameter.setTargetAtTime(
+        value,
+        audioContext.currentTime,
+        0.02
+    );
+
+}
+
+
+reverbSlider.addEventListener(
+"input",
+()=>{
+
+    reverbMix =
+        Number(
+            reverbSlider.value
+        ) / 100;
+
+    reverbValue.textContent =
+        reverbSlider.value + "%";
+
+    if(reverbWetGain){
+
+        setAudioParamSmoothly(
+            reverbWetGain.gain,
+            reverbMix
+        );
+
+    }
+
+});
+
+
+delaySlider.addEventListener(
+"input",
+()=>{
+
+    delayMix =
+        Number(
+            delaySlider.value
+        ) / 100;
+
+    delayValue.textContent =
+        delaySlider.value + "%";
+
+    if(delayWetGain){
+
+        setAudioParamSmoothly(
+            delayWetGain.gain,
+            delayMix
+        );
+
+    }
+
+});
+
+
+// ==================================================
+// PLUCK STRING
+// ==================================================
+
+function playString(string){
+
+    const length =
+        string.userData.length;
+
+
+    const frequency =
+        lengthToFrequency(
+            length
+        );
+
+
+    pluck(frequency);
+
+
+    document.getElementById("lengthStatus").textContent =
+        "Length: " + length.toFixed(4);
+    document.getElementById("frequencyStatus").textContent =
+        "Frequency: " + frequency.toFixed(2) + " Hz";
+
+}
+
+
+
+// ==================================================
+// PLAYING MODE / BOW  (v0.7)
+// ==================================================
+
+
+const bowElement =
+    document.getElementById("bow");
+
+// Unified gesture interface: no Pizz/Arco mode toggle.
+let playingMode = "unified";
+let arcoPointerActive = false;
+let arcoPreviousRay = null;
+let arcoContacts = new Set();
+
+let bowClientX = null;
+let bowClientY = null;
+
+const bowLengthPx = 240;
+
+// v0.7.4:
+// The bow follows the recent mouse trajectory.
+// Samples are retained for a short time window so tiny
+// frame-to-frame hand jitter does not spin the bow.
+
+const bowTrail = [];
+const bowTrailWindowMs = 130;
+
+let bowAngle = 0;
+
+// Which screen-space rule currently chooses the bow side.
+// "horizontal": the trailing endpoint must stay left of pointer.
+// "vertical":   the trailing endpoint must stay below pointer.
+// Hysteresis prevents chatter around a 45-degree trajectory.
+
+let bowAxisMode = "horizontal";
+const bowAxisSwitchRatio = 1.20;
+let bowDrawStage = 0;
+let bowPointA = null;
+let bowPointB = null;
+let bowActiveT = 0;
+let bowLastActiveSample = null;
+let bowAnchorOffsetA = null;
+let bowAnchorOffsetB = null;
+let bowLastMouse = null;
+
+
+// v0.8 bowing dynamics.
+// Velocity is measured in screen pixels per second and smoothed.
+// A stationary bow should stop exciting the string, while faster
+// transverse motion produces a stronger/brighter tone.
+
+let bowVelocityPxPerSec = 0;
+let bowLastSample = null;
+
+const bowVelocitySmoothing = 0.28;
+const bowQuietVelocity = 18;
+const bowFullVelocity = 330;
+
+
+function setBowElementFromPoints(a,b){
+
+    if(!a || !b)
+        return;
+
+    const dx=b.x-a.x;
+    const dy=b.y-a.y;
+
+    bowElement.style.left=a.x+"px";
+    bowElement.style.top=a.y+"px";
+    bowElement.style.width=Math.hypot(dx,dy)+"px";
+    bowElement.style.transformOrigin="0% 50%";
+    bowElement.style.transform=
+        "translate(0%,-50%) rotate("+
+        Math.atan2(dy,dx)+"rad)";
+    bowElement.style.display=
+        "block";
+}
+
+function resetDrawnBow(){
+
+    bowDrawStage=0;
+    bowPointA=null;
+    bowPointB=null;
+    bowActiveT=0;
+    bowLastActiveSample=null;
+    bowAnchorOffsetA=null;
+    bowAnchorOffsetB=null;
+    bowLastMouse=null;
+    bowVelocityPxPerSec=0;
+    bowLastSample=null;
+    arcoPointerActive=false;
+    arcoContacts.clear();
+    stopAllArco();
+
+    bowElement.style.display="none";
+
+    const point=document.getElementById("bowActivePoint");
+    if(point) point.style.display="none";
+}
+
+function beginDrawnBow(x,y){
+
+    stopAllArco();
+    arcoContacts.clear();
+
+    bowPointA={x,y};
+    bowPointB=null;
+    bowDrawStage=1;
+    bowVelocityPxPerSec=0;
+    bowLastActiveSample=null;
+    bowAnchorOffsetA=null;
+    bowAnchorOffsetB=null;
+    bowLastMouse={x,y,t:performance.now()};
+
+    setBowElementFromPoints(bowPointA,bowPointA);
+
+    const point=document.getElementById("bowActivePoint");
+    if(point) point.style.display="none";
+}
+
+function finishDrawnBow(x,y){
+
+    if(!bowPointA) return;
+
+    if(Math.hypot(x-bowPointA.x,y-bowPointA.y) < 8)
+        return;
+
+    bowPointB={x,y};
+    bowDrawStage=2;
+    arcoPointerActive=true;
+
+    // The second click is the "hand" reference point.
+    // Store both Bow endpoints relative to it. Subsequent mouse movement
+    // translates the entire segment rigidly without changing angle/length.
+    bowAnchorOffsetA={
+        x:bowPointA.x-x,
+        y:bowPointA.y-y
+    };
+
+    bowAnchorOffsetB={
+        x:bowPointB.x-x,
+        y:bowPointB.y-y
+    };
+
+    bowLastMouse={
+        x,y,
+        t:performance.now()
+    };
+
+    bowVelocityPxPerSec=0;
+    bowLastSample={
+        x,y,
+        t:performance.now()
+    };
+
+    setBowElementFromPoints(bowPointA,bowPointB);
+
+    const point=document.getElementById("bowActivePoint");
+    if(point) point.style.display="none";
+}
+
+function updateBowVisual(event){
+
+    if(bowDrawStage === 1 && bowPointA){
+
+        setBowElementFromPoints(
+            bowPointA,
+            {x:event.clientX,y:event.clientY}
+        );
+
+        return;
+    }
+
+    if(
+        bowDrawStage !== 2 ||
+        !bowAnchorOffsetA ||
+        !bowAnchorOffsetB
+    ){
+        return;
+    }
+
+    const now=performance.now();
+
+    if(bowLastMouse){
+
+        const dt=Math.max(
+            (now-bowLastMouse.t)/1000,
+            0.001
+        );
+
+        const dx=event.clientX-bowLastMouse.x;
+        const dy=event.clientY-bowLastMouse.y;
+
+        const instantaneousVelocity=
+            Math.hypot(dx,dy)/dt;
+
+        bowVelocityPxPerSec +=
+            (instantaneousVelocity-bowVelocityPxPerSec)*
+            bowVelocitySmoothing;
+    }
+
+    bowLastMouse={
+        x:event.clientX,
+        y:event.clientY,
+        t:now
+    };
+
+    // Rigid translation: angle and length remain exactly as drawn.
+    bowPointA={
+        x:event.clientX+bowAnchorOffsetA.x,
+        y:event.clientY+bowAnchorOffsetA.y
+    };
+
+    bowPointB={
+        x:event.clientX+bowAnchorOffsetB.x,
+        y:event.clientY+bowAnchorOffsetB.y
+    };
+
+    bowLastSample={
+        x:event.clientX,
+        y:event.clientY,
+        t:now
+    };
+
+    setBowElementFromPoints(
+        bowPointA,
+        bowPointB
+    );
+}
+
+
+// ARCO uses the visible bow itself, not mouse travel.
+// The horizontal screen-space bow becomes a ruled 3D
+// surface between two camera rays, one from each end.
+
+function rayFromClientPoint(
+    clientX,
+    clientY
+){
+
+    const rect =
+        renderer.domElement
+        .getBoundingClientRect();
+
+    mouse.x =
+        (
+            (
+                clientX -
+                rect.left
+            ) /
+            rect.width
+        ) * 2 - 1;
+
+    mouse.y =
+        -(
+            (
+                clientY -
+                rect.top
+            ) /
+            rect.height
+        ) * 2 + 1;
+
+    raycaster.setFromCamera(
+        mouse,
+        camera
+    );
+
+    return {
+        origin:
+            raycaster.ray.origin.clone(),
+
+        direction:
+            raycaster.ray.direction.clone()
+    };
+
+}
+
+
+function currentBowRays(){
+
+    if(
+        bowDrawStage !== 2 ||
+        !bowPointA ||
+        !bowPointB
+    ){
+        return null;
+    }
+
+    return {
+        left:rayFromClientPoint(
+            bowPointA.x,
+            bowPointA.y
+        ),
+        right:rayFromClientPoint(
+            bowPointB.x,
+            bowPointB.y
+        )
+    };
+}
+
+// ==================================================
+// 3D PICK STRUM  (v0.5.1)
+//
+// The cursor is treated as a thin 3D pick extending
+// through the model. During a drag, the previous and
+// current cursor rays form a continuous ruled surface.
+//
+// Each string segment is tested directly against that
+// continuous surface. No depth sampling is used.
+//
+// Deeper strings are allowed to sound: this is NOT a
+// frontmost-only system.
+// ==================================================
+
+let pointerDown = false;
+let previousRay = null;
+
+// Strings currently touched by the 3D pick.
+// A string sounds only when it ENTERS this set.
+let contactingStrings =
+    new Set();
+
+
+const activeFlashTimers =
+    new WeakMap();
+
+
+// --------------------------------------------------
+// RAY / STRING HELPERS
+// --------------------------------------------------
+
+function rayFromEvent(event){
+
+    updateMouse(event);
+
+    raycaster.setFromCamera(
+        mouse,
+        camera
+    );
+
+    return {
+        origin:
+            raycaster.ray.origin.clone(),
+
+        direction:
+            raycaster.ray.direction.clone()
+    };
+
+}
+
+
+function stringWorldSegment(string){
+
+    const position =
+        string.geometry.attributes.position;
+
+    const a =
+        new THREE.Vector3()
+        .fromBufferAttribute(position,0)
+        .applyMatrix4(string.matrixWorld);
+
+    const b =
+        new THREE.Vector3()
+        .fromBufferAttribute(position,1)
+        .applyMatrix4(string.matrixWorld);
+
+    return {a,b};
+
+}
+
+
+// --------------------------------------------------
+// MODEL SCALE
+// --------------------------------------------------
+
+function modelMetrics(){
+
+    const box =
+        new THREE.Box3();
+
+    for(const string of strings){
+
+        const s =
+            stringWorldSegment(string);
+
+        box.expandByPoint(s.a);
+        box.expandByPoint(s.b);
+
+    }
+
+    if(box.isEmpty()){
+
+        return {
+            center:
+                new THREE.Vector3(),
+
+            diagonal:1,
+
+            nearDepth:0.01,
+            farDepth:10
+        };
+
+    }
+
+    const center =
+        new THREE.Vector3();
+
+    const size =
+        new THREE.Vector3();
+
+    box.getCenter(center);
+    box.getSize(size);
+
+    const diagonal =
+        Math.max(
+            size.length(),
+            0.001
+        );
+
+    const centerDepth =
+        Math.max(
+            center.distanceTo(
+                camera.position
+            ),
+            0.01
+        );
+
+    const range =
+        diagonal * 0.85;
+
+    return {
+        center,
+        diagonal,
+
+        nearDepth:
+            Math.max(
+                0.01,
+                centerDepth-range
+            ),
+
+        farDepth:
+            centerDepth+range
+    };
+
+}
+
+
+// --------------------------------------------------
+// VISUAL FEEDBACK
+//
+// Flash the exact string that actually sounded.
+// This replaces the old hover-raycast mismatch.
+// --------------------------------------------------
+
+function flashString(string){
+
+    string.material.color.set(
+        ITR_DESIGN.active
+    );
+
+    const old =
+        activeFlashTimers.get(
+            string
+        );
+
+    if(old)
+        clearTimeout(old);
+
+    const timer =
+        setTimeout(
+            ()=>{
+
+                string.material.color.set(
+                    ITR_DESIGN.string
+                );
+
+                activeFlashTimers.delete(
+                    string
+                );
+
+            },
+            140
+        );
+
+    activeFlashTimers.set(
+        string,
+        timer
+    );
+
+}
+
+
+function soundString(string){
+
+    playString(string);
+    flashString(string);
+
+}
+
+
+// --------------------------------------------------
+// CLOSEST POINT: STRING SEGMENT vs SWEPT PICK SURFACE
+//
+// Surface:
+//   P(u,d) = O + lerp(D0,D1,u) * d
+//
+// where u runs from previous cursor ray to current
+// cursor ray and d runs through model depth.
+//
+// We minimize distance from a finite string segment
+// to this surface numerically in u only. For each u,
+// the closest distance to that ray is analytic.
+//
+// This is continuous in depth, unlike v0.5's 48
+// discrete depth slices.
+// --------------------------------------------------
+
+function pointOnSegment(a,b,t){
+
+    return a.clone().lerp(b,t);
+
+}
+
+
+function closestStringToRayAtU(
+    seg,
+    previous,
+    current,
+    u,
+    nearDepth,
+    farDepth
+){
+
+    const origin =
+        previous.origin.clone()
+        .lerp(
+            current.origin,
+            u
+        );
+
+    const direction =
+        previous.direction.clone()
+        .lerp(
+            current.direction,
+            u
+        )
+        .normalize();
+
+
+    // Closest points between finite string AB and
+    // finite depth segment along the current pick ray.
+
+    const r0 =
+        origin.clone()
+        .addScaledVector(
+            direction,
+            nearDepth
+        );
+
+    const r1 =
+        origin.clone()
+        .addScaledVector(
+            direction,
+            farDepth
+        );
+
+
+    const d1 =
+        seg.b.clone().sub(seg.a);
+
+    const d2 =
+        r1.clone().sub(r0);
+
+    const r =
+        seg.a.clone().sub(r0);
+
+    const a =
+        d1.dot(d1);
+
+    const e =
+        d2.dot(d2);
+
+    const f =
+        d2.dot(r);
+
+    const EPS = 1e-12;
+
+    let s = 0;
+    let t = 0;
+
+
+    if(a <= EPS && e <= EPS){
+
+        return {
+            distanceSq:
+                seg.a.distanceToSquared(
+                    r0
+                ),
+
+            stringT:0,
+            depthT:0,
+            u
+        };
+
+    }
+
+
+    if(a <= EPS){
+
+        s = 0;
+
+        t =
+            THREE.MathUtils.clamp(
+                f/e,
+                0,1
+            );
+
+    }
+    else{
+
+        const c =
+            d1.dot(r);
+
+        if(e <= EPS){
+
+            t = 0;
+
+            s =
+                THREE.MathUtils.clamp(
+                    -c/a,
+                    0,1
+                );
+
+        }
+        else{
+
+            const b =
+                d1.dot(d2);
+
+            const denom =
+                a*e-b*b;
+
+            if(
+                Math.abs(denom) >
+                EPS
+            ){
+
+                s =
+                    THREE.MathUtils.clamp(
+                        (b*f-c*e) /
+                        denom,
+                        0,1
+                    );
+
+            }
+
+            t =
+                (b*s+f)/e;
+
+
+            if(t < 0){
+
+                t = 0;
+
+                s =
+                    THREE.MathUtils.clamp(
+                        -c/a,
+                        0,1
+                    );
+
+            }
+            else if(t > 1){
+
+                t = 1;
+
+                s =
+                    THREE.MathUtils.clamp(
+                        (b-c)/a,
+                        0,1
+                    );
+
+            }
+
+        }
+
+    }
+
+
+    const pString =
+        pointOnSegment(
+            seg.a,
+            seg.b,
+            s
+        );
+
+    const pRay =
+        pointOnSegment(
+            r0,
+            r1,
+            t
+        );
+
+
+    return {
+        distanceSq:
+            pString.distanceToSquared(
+                pRay
+            ),
+
+        stringT:s,
+        depthT:t,
+        u
+    };
+
+}
+
+
+// Adaptive search over the cursor-motion dimension.
+// Depth itself remains continuous / analytic.
+
+function continuousPickHit(
+    string,
+    previous,
+    current,
+    metrics
+){
+
+    const seg =
+        stringWorldSegment(
+            string
+        );
+
+
+    // Small physical pick radius.
+    // Kept deliberately tighter than v0.5.
+    const radius =
+        Math.max(
+            metrics.diagonal *
+            0.0015,
+            0.001
+        );
+
+    const radiusSq =
+        radius*radius;
+
+
+    // Coarse pass in cursor-motion parameter u.
+
+    const COARSE = 12;
+
+    let best = null;
+
+
+    for(
+        let i=0;
+        i<=COARSE;
+        i++
+    ){
+
+        const u =
+            i/COARSE;
+
+        const result =
+            closestStringToRayAtU(
+                seg,
+                previous,
+                current,
+                u,
+                metrics.nearDepth,
+                metrics.farDepth
+            );
+
+        if(
+            !best ||
+            result.distanceSq <
+            best.distanceSq
+        ){
+
+            best = result;
+
+        }
+
+    }
+
+
+    // Refine around the best coarse u.
+    // This gives much better continuity for diagonal
+    // and camera-depth-oriented strings without making
+    // the pick itself artificially fat.
+
+    let span =
+        1/COARSE;
+
+    let center =
+        best.u;
+
+
+    for(
+        let pass=0;
+        pass<5;
+        pass++
+    ){
+
+        const left =
+            Math.max(
+                0,
+                center-span
+            );
+
+        const right =
+            Math.min(
+                1,
+                center+span
+            );
+
+        let localBest =
+            best;
+
+
+        for(
+            let j=0;
+            j<=8;
+            j++
+        ){
+
+            const u =
+                THREE.MathUtils.lerp(
+                    left,
+                    right,
+                    j/8
+                );
+
+            const result =
+                closestStringToRayAtU(
+                    seg,
+                    previous,
+                    current,
+                    u,
+                    metrics.nearDepth,
+                    metrics.farDepth
+                );
+
+            if(
+                result.distanceSq <
+                localBest.distanceSq
+            ){
+
+                localBest =
+                    result;
+
+            }
+
+        }
+
+
+        best =
+            localBest;
+
+        center =
+            best.u;
+
+        span *= 0.3;
+
+    }
+
+
+    if(
+        best.distanceSq >
+        radiusSq
+    ){
+
+        return null;
+
+    }
+
+
+    return {
+        order:
+            best.u,
+
+        distanceSq:
+            best.distanceSq
+    };
+
+}
+
+
+// --------------------------------------------------
+// HOVER PERFORMANCE STATE MACHINE
+// --------------------------------------------------
+//
+// Bow absent:
+//   mouse movement itself is the 3D pick -> Pizz / Strum.
+//
+// First click:
+//   set Bow point A.
+//
+// Second click:
+//   set Bow point B and enter Arco.
+//
+// Bow complete:
+//   hover translates the whole Bow -> Arco.
+//
+// Next click:
+//   remove Bow and return to Pizz / Strum.
+//
+
+let hoverPreviousRay = null;
+
+renderer.domElement.addEventListener(
+"pointerdown",
+event=>{
+
+    if(event.button !== 0)
+        return;
+
+    initAudio();
+
+    // Clicks are configuration only; never Pizz.
+    if(bowDrawStage === 0){
+
+        beginDrawnBow(
+            event.clientX,
+            event.clientY
+        );
+
+        hoverPreviousRay=null;
+        return;
+    }
+
+    if(bowDrawStage === 1){
+
+        finishDrawnBow(
+            event.clientX,
+            event.clientY
+        );
+
+        hoverPreviousRay=null;
+        return;
+    }
+
+    // Completed Bow: one click removes it and returns
+    // immediately to hover Pizz / Strum.
+    resetDrawnBow();
+    hoverPreviousRay=null;
+});
+
+
+renderer.domElement.addEventListener(
+"pointermove",
+event=>{
+
+    // Do not perform while any mouse button is held.
+    // Right-drag remains exclusively Orbit.
+    if(event.buttons !== 0){
+        hoverPreviousRay=null;
+        return;
+    }
+
+    // --------------------------------------------------
+    // BOW DEFINITION PREVIEW
+    // --------------------------------------------------
+
+    if(bowDrawStage === 1){
+
+        updateBowVisual(event);
+        hoverPreviousRay=null;
+        return;
+    }
+
+
+    // --------------------------------------------------
+    // ARCO
+    // --------------------------------------------------
+
+    if(bowDrawStage === 2){
+
+        updateBowVisual(event);
+        hoverPreviousRay=null;
+        return;
+    }
+
+
+    // --------------------------------------------------
+    // PIZZ / STRUM BY HOVER
+    // --------------------------------------------------
+
+    const currentRay=rayFromEvent(event);
+
+    if(!hoverPreviousRay){
+
+        hoverPreviousRay=currentRay;
+        return;
+    }
+
+    const metrics=modelMetrics();
+    const crossed=[];
+
+    for(const string of strings){
+
+        const hit=continuousPickHit(
+            string,
+            hoverPreviousRay,
+            currentRay,
+            metrics
+        );
+
+        if(hit){
+
+            crossed.push({
+                string,
+                order:hit.order,
+                distanceSq:hit.distanceSq
+            });
+        }
+    }
+
+    crossed.sort(
+        (a,b)=>
+            a.order-b.order ||
+            a.distanceSq-b.distanceSq
+    );
+
+    const currentContacts=
+        new Set(
+            crossed.map(hit=>hit.string)
+        );
+
+    // Same contact-enter principle as the stable Strum:
+    // remaining over one string does not retrigger it.
+    for(const hit of crossed){
+
+        if(!contactingStrings.has(hit.string)){
+            soundString(hit.string);
+        }
+    }
+
+    contactingStrings=currentContacts;
+    hoverPreviousRay=currentRay;
+});
+
+
+renderer.domElement.addEventListener(
+"pointerleave",
+()=>{
+
+    hoverPreviousRay=null;
+    contactingStrings.clear();
+
+    // Keep a completed Bow definition, but silence it
+    // while the pointer is outside the performance area.
+    if(bowDrawStage === 2){
+        arcoContacts.clear();
+        stopAllArco();
+    }
+});
+
+
+window.addEventListener(
+"dragover",
+event=>{
+
+    event.preventDefault();
+
+});
+
+
+function loadModelFile(file){
+
+    if(!file)
+        return;
+
+    const name =
+        file.name.toLowerCase();
+
+    if(
+        !name.endsWith(".glb") &&
+        !name.endsWith(".gltf")
+    ){
+        alert(
+            "Please select a .glb or .gltf file."
+        );
+        return;
+    }
+
+    const url =
+        URL.createObjectURL(file);
+
+    loader.load(
+        url,
+        gltf=>{
+            extractEdges(
+                gltf.scene
+            );
+
+            setLoadedFileStatus(file.name);
+
+            document
+            .getElementById(
+                "dropMessage"
+            )
+            .style.display = "none";
+
+            URL.revokeObjectURL(url);
+        },
+        undefined,
+        error=>{
+            console.error(error);
+            alert(
+                "Could not load model."
+            );
+            URL.revokeObjectURL(url);
+        }
+    );
+}
+
+
+window.addEventListener(
+"drop",
+event=>{
+
+    event.preventDefault();
+
+    const file =
+        event.dataTransfer.files[0];
+
+    loadModelFile(file);
+});
+
+
+const modelFileInput =
+    document.getElementById("modelFileInput");
+
+const dropMessage =
+    document.getElementById("dropMessage");
+
+dropMessage.addEventListener(
+    "click",
+    ()=>modelFileInput.click()
+);
+
+dropMessage.addEventListener(
+    "keydown",
+    event=>{
+        if(
+            event.key === "Enter" ||
+            event.key === " "
+        ){
+            event.preventDefault();
+            modelFileInput.click();
+        }
+    }
+);
+
+modelFileInput.addEventListener(
+    "change",
+    event=>{
+        const file =
+            event.target.files &&
+            event.target.files[0];
+
+        loadModelFile(file);
+
+        // Allows selecting the same file again later.
+        event.target.value = "";
+    }
+);
+
+
+// Keep the on-screen bow attached to the cursor in ARCO
+// even before the mouse button is pressed.
+window.addEventListener(
+    "pointermove",
+    event=>updateBowVisual(event)
+);
+
+window.addEventListener(
+    "blur",
+    ()=>{
+
+        arcoPreviousRay = null;
+        arcoContacts.clear();
+        stopAllArco();
+
+        arcoPointerActive =
+            bowDrawStage === 2;
+
+    }
+);
+
+
+// ==================================================
+// RESIZE
+// ==================================================
+
+window.addEventListener(
+"resize",
+()=>{
+
+    camera.aspect =
+        window.innerWidth /
+        window.innerHeight;
+
+
+    camera.updateProjectionMatrix();
+
+
+    renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+    );
+
+});
+
+
+
+// ==================================================
+// ARCO EXCITATION  (v0.8)
+//
+// Excitation = bow velocity × crossing angle.
+// Parallel bow/string motion tends toward silence;
+// perpendicular motion receives maximum excitation.
+// ==================================================
+
+function stringScreenDirection(string){
+
+    const positions =
+        string.geometry.attributes.position;
+
+    if(!positions || positions.count < 2)
+        return null;
+
+    const a =
+        new THREE.Vector3(
+            positions.getX(0),
+            positions.getY(0),
+            positions.getZ(0)
+        );
+
+    const b =
+        new THREE.Vector3(
+            positions.getX(1),
+            positions.getY(1),
+            positions.getZ(1)
+        );
+
+    string.localToWorld(a);
+    string.localToWorld(b);
+
+    a.project(camera);
+    b.project(camera);
+
+    const dx = b.x-a.x;
+    const dy = -(b.y-a.y);
+
+    const length =
+        Math.hypot(dx,dy);
+
+    if(length < 0.000001)
+        return null;
+
+    return {
+        x:dx/length,
+        y:dy/length
+    };
+}
+
+
+function arcoExcitationForString(string){
+
+    const stringDirection =
+        stringScreenDirection(string);
+
+    if(!stringDirection)
+        return 0;
+
+    // Bow is an unoriented line, so sign is irrelevant.
+    if(!bowPointA || !bowPointB)
+        return 0;
+
+    const bdx=bowPointB.x-bowPointA.x;
+    const bdy=bowPointB.y-bowPointA.y;
+    const bl=Math.hypot(bdx,bdy);
+
+    if(bl < 0.000001)
+        return 0;
+
+    const bowX=bdx/bl;
+    const bowY=bdy/bl;
+
+    // Magnitude of 2D cross product = |sin(theta)|.
+    // v0.8.1: angle is modulation, not an on/off gate.
+    // Even nearly parallel bowing retains 35% of the
+    // available excitation, preventing abrupt holes.
+
+    const rawCrossing =
+        Math.abs(
+            bowX*stringDirection.y -
+            bowY*stringDirection.x
+        );
+
+    const crossing =
+        0.35 +
+        0.65 * rawCrossing;
+
+    const velocityAmount =
+        THREE.MathUtils.clamp(
+            (
+                bowVelocityPxPerSec -
+                bowQuietVelocity
+            ) /
+            (
+                bowFullVelocity -
+                bowQuietVelocity
+            ),
+            0,
+            1
+        );
+
+    // Slight nonlinear response gives a controllable soft range.
+    // v0.8.3: bowed strings should speak at modest hand speeds.
+    // A stronger sub-linear curve gives useful excitation early,
+    // while still preserving a dynamic range toward fast strokes.
+    const velocityResponse =
+        Math.pow(
+            velocityAmount,
+            0.42
+        );
+
+    return (
+        velocityResponse *
+        Math.pow(crossing,0.80)
+    );
+}
+
+
+function updateArcoVoiceDynamics(
+    string,
+    excitation
+){
+
+    const voice =
+        arcoVoices.get(string);
+
+    if(!voice || !audioContext)
+        return;
+
+    const now =
+        audioContext.currentTime;
+
+
+    // v0.8.1: excitation has inertia.
+    // It rises moderately, but falls much more slowly.
+    // Brief changes in mouse velocity therefore do not
+    // punch holes into a sustained bowed tone.
+
+    const current =
+        voice.smoothedExcitation ?? 0;
+
+    const riseFactor = 0.12;
+    const fallFactor = 0.035;
+
+    const factor =
+        excitation > current
+            ? riseFactor
+            : fallFactor;
+
+    voice.smoothedExcitation =
+        current +
+        (excitation-current) *
+        factor;
+
+
+    const e =
+        voice.smoothedExcitation;
+
+
+    // Contact itself is silent. Motion gradually brings
+    // the voice out of the floor level.
+
+    // v0.8.2: restore Arco loudness without changing
+    // the improved v0.8.1 articulation/dynamics.
+    const arcoOutputBoost = 1.8;
+
+    const targetGain =
+        0.00012 +
+        e * 0.078 *
+        arcoOutputBoost;
+
+    voice.voiceGain.gain
+    .setTargetAtTime(
+        targetGain,
+        now,
+        e > current
+            ? 0.085
+            : 0.28
+    );
+
+
+    // Brightness follows the same smoothed excitation,
+    // avoiding rapid spectral flutter.
+
+    if(voice.filter){
+
+        const targetCutoff =
+            850 +
+            e * 3600;
+
+        voice.filter.frequency
+        .setTargetAtTime(
+            targetCutoff,
+            now,
+            0.16
+        );
+    }
+}
+
+
+// ==================================================
+// CONTINUOUS ARCO CONTACT  (v0.7.2)
+//
+// While the left button is held, evaluate the actual
+// visible bow every animation frame. This means a bow
+// can remain stationary on a string and sustain it.
+// ==================================================
+
+function updateArcoContacts(){
+
+    if(bowLastSample){
+
+        const idleMs=
+            performance.now()-bowLastSample.t;
+
+        if(idleMs > 35){
+
+            bowVelocityPxPerSec *= 0.82;
+
+            if(bowVelocityPxPerSec < 1)
+                bowVelocityPxPerSec=0;
+        }
+    }
+
+    if(
+        bowDrawStage !== 2 ||
+        !arcoPointerActive
+    ){
+        return;
+    }
+
+    const bowRays=currentBowRays();
+
+    if(!bowRays)
+        return;
+
+    const metrics=modelMetrics();
+    const currentContacts=new Set();
+
+    for(const string of strings){
+
+        // The complete moving Bow segment is the active 3D pick surface.
+        const hit=continuousPickHit(
+            string,
+            bowRays.left,
+            bowRays.right,
+            metrics
+        );
+
+        if(hit){
+
+            currentContacts.add(string);
+
+            if(!arcoContacts.has(string))
+                startArco(string);
+
+            updateArcoVoiceDynamics(
+                string,
+                arcoExcitationForString(string)
+            );
+        }
+    }
+
+    for(const string of arcoContacts){
+
+        if(!currentContacts.has(string))
+            stopArco(string);
+    }
+
+    arcoContacts=currentContacts;
+}
+
+
+// ==================================================
+// LOOP
+// ==================================================
+
+function animate(){
+
+    requestAnimationFrame(
+        animate
+    );
+
+    controls.update();
+
+    updateArcoContacts();
+
+    renderer.render(
+        scene,
+        camera
+    );
+
+}
+
+animate();
+
+
+function setLoadedFileStatus(fileName) {
+    const el = document.getElementById("fileStatus");
+    const replace = document.getElementById("replaceModel");
+
+    if (el)
+        el.textContent = "Model: " + (fileName || "N/A");
+
+    if (replace)
+        replace.hidden = !fileName;
+}
+
+function resetModelForReplacement() {
+    stopAllArco();
+    clearStrings();
+
+    const el = document.getElementById("fileStatus");
+    const replace = document.getElementById("replaceModel");
+    const drop = document.getElementById("dropMessage");
+    const input = document.getElementById("modelFileInput");
+
+    if (el) el.textContent = "Model: N/A";
+    if (replace) replace.hidden = true;
+    if (drop) drop.style.display = "flex";
+    if (input) input.value = "";
+
+    const length = document.getElementById("lengthStatus");
+    const frequency = document.getElementById("frequencyStatus");
+    if (length) length.textContent = "Length: —";
+    if (frequency) frequency.textContent = "Frequency: —";
+
+    // Reset any partially configured Bow state through the same
+    // visible state variables used by the interaction system.
+    if (typeof bowDrawStage !== "undefined") bowDrawStage = 0;
+    if (typeof bowConfigured !== "undefined") bowConfigured = false;
+    const bow = document.getElementById("bow");
+    const bowPoint = document.getElementById("bowActivePoint");
+    if (bow) bow.style.display = "none";
+    if (bowPoint) bowPoint.style.display = "none";
+}
+
+document.getElementById("replaceModel").addEventListener(
+    "click",
+    event=>{
+        event.stopPropagation();
+        resetModelForReplacement();
+    }
+);
+
+</script>
+
+</body>
+</html>
