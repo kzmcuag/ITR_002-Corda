@@ -3,3 +3,4 @@ node_modules/
 0_old/
 
 *.glb
+dist/
