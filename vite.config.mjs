@@ -1,5 +1,6 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: '/ITR_002-Corda/'
-})
+  base: '/ITR_002-Corda/',
+  build: { outDir: 'dist' },
+});
