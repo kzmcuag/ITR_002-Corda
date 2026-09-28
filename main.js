@@ -19,7 +19,7 @@ const loader = new GLTFLoader();
 const ITR_DESIGN = {
     background: 0x111111,
     string: 0xaaaaaa,
-    active: 0xffffff,
+    active: 0x00ff00,
     gridMajor: 0x444444,
     gridMinor: 0x222222,
     gridSize: 10,

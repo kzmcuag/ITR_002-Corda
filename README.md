@@ -1,40 +1,71 @@
-# Corda GitHub Pages 修正版
+# Corda
 
-## GitHubへの配置
+Three.jsとWeb Audioを使うブラウザーアプリです。Viteで開発・ビルドし、GitHub Pagesに静的ファイルとして公開する構成です。
 
-1. このフォルダーの中身をリポジトリ ITR_002-Corda のルートへ配置します。index.html、main.js、package.json、package-lock.json、vite.config.mjs は同じ階層です。
-2. 既存のPages公開ワークフローがある場合は、それを同梱の .github/workflows/deploy.yml の内容に置き換えるか、Node.js 24、npm ci、npm run build、公開対象 ./dist となるよう修正してください。同じサイトを公開するワークフローを二重に残さないでください。
-3. GitHubの Settings → Pages → Build and deployment → Source で GitHub Actions を選択します。
-4. main ブランチへコミットすると公開されます。ブランチ名が違う場合は deploy.yml の branches を変更してください。
-5. 公開URLは https://<GitHubユーザー名>.github.io/ITR_002-Corda/ です。
+## 開発環境
 
-## ローカルで確認
+- Node.js 24（既存のGitHub Actionsと同じメジャーバージョン。package.jsonの指定は22.12.0以上）
+- npm（Node.jsに同梱）
+- WebGLとWeb Audioに対応するブラウザー
 
-Node.js 24 を使用してください。
+リポジトリのルートで実行します。
 
-    npm ci
-    npm run dev
+```sh
+node --version
+npm --version
+npm ci
+npm run dev
+```
 
-公開用の確認:
+ターミナルに表示されたURLを開きます。通常は <http://localhost:5173/ITR_002-Corda/> です。ポートが使用中の場合は表示されたポートを使ってください。停止はターミナルで `Ctrl+C` です。
 
-    npm run build
-    npm run preview
+依存関係はpackage-lock.jsonで固定しています。通常のセットアップでは `npm ci` を使います。Windowsでnpmの標準キャッシュにアクセス権エラーが出る場合は、PowerShellで一時フォルダーのキャッシュを指定できます。
 
-表示されたローカルURLの /ITR_002-Corda/ を開いてください。
-HTMLをファイルとして直接開くのではなく、Vite経由で利用します。
-GitHub Pagesへ公開するのはソースそのものではなく、ビルドで生成した dist の内容です。
+```powershell
+npm ci --cache "$env:TEMP\corda-npm-cache"
+```
 
-## 変更と検証
+`index.html` を直接開かず、Vite経由で利用してください。モデルは画面へGLB/GLTFをドロップするか、ファイル選択で読み込みます。モデルファイルは同梱していません。InterフォントはGoogle Fontsから取得するため、フォントの取得にはネットワーク接続が必要です。
 
-- 元の script type="module" 内部を、改行・空白を含めて main.js にそのまま移動しました。
-- 元のscript要素を <script type="module" src="./main.js"></script> に置き換えました。
-- その箇所以外のHTML/CSS/UIは変更していません。
-- main.jsを元の位置へ戻すと、添付の元HTMLとバイト単位で完全一致することを確認しました。
-- 既存のpackage.jsonが提供されていないため、今回取得したThree.jsとViteのバージョンを固定し、package-lock.jsonも同梱しています。
-- npm run build の成功と、dist/index.html が /ITR_002-Corda/assets/ 内の生成済みJSを参照することを確認しました。
-- GLBモデルでの操作・音声・描画の実機確認、およびGitHub上での実際の公開は未実施です。
-- ビルド時の500kB超の警告はエラーではありません。既存コードを保持するため、コード分割などの変更は加えていません。
+## ビルドと公開前の確認
 
-補足: Viteはインラインのmodule scriptにも対応しています。従来の未処理importが公開された原因は、このHTMLだけでは断定できません。本一式では、明示的なエントリー、ビルド手順、distの公開を揃えています。
+```sh
+npm run build
+npm run preview
+```
 
-参考: https://vite.dev/guide/static-deploy#github-pages
+ビルド結果は `dist/` に生成されます。通常のプレビューURLは <http://localhost:4173/ITR_002-Corda/> です。停止は `Ctrl+C` です。`npm run preview` はビルド結果のローカル確認用です。
+
+現状は生成JSが500 kBを超える警告が出ますが、ビルドは成功します。既存の機能・音・UIを保つため、この警告を解消する目的でコード分割や設定変更は行っていません。
+
+## GitHub Pagesへの公開
+
+以下は公開を明示的に依頼された場合の手順です。GitHubへの送信や公開は通常のローカルセットアップには含みません。
+
+1. GitHubの対象リポジトリで **Settings → Pages → Build and deployment → Source** を **GitHub Actions** に設定します。
+2. ローカルで `npm ci`、`npm run build`、`npm run preview` を実行し、公開対象を確認します。
+3. 公開の承認後に、対象の変更をコミットしてGitHubの `main` ブランチへpushします。既存の `.github/workflows/deploy.yml` が自動実行されます。GitHubにあるソースを再公開する場合は、Actionsから同ワークフローを手動実行することもできます。
+4. Actionsのbuild/deployの成功と、Pagesに表示される公開URLを確認します。
+
+既存ワークフローはNode.js 24で `npm ci` と `npm run build` を実行し、`dist/` を公開します。**mainへのpushは公開のトリガーになる**ため、送信前に公開の意図も確認してください。公開用ワークフローを重複して作成する必要はありません。
+
+現在のリモート設定に対応する公開先は <https://kzmcuag.github.io/ITR_002-Corda/> です（実際の公開状態は今回未確認）。`vite.config.mjs` の `base` は `/ITR_002-Corda/` です。リポジトリ名や公開パスを変える場合は、この設定も合わせて見直してください。
+
+## ファイル構成
+
+- `index.html`: 画面のHTMLとCSS
+- `main.js`: 描画、操作、モデル読み込み、音声処理
+- `package.json` / `package-lock.json`: npmコマンドと固定した依存関係
+- `vite.config.mjs`: 公開パスとビルド出力先
+- `.github/workflows/deploy.yml`: GitHub Pagesへのビルド・公開
+- `AGENTS.md`: 作業時の変更範囲、検証、送信・公開のルール
+
+`node_modules/` と `dist/` はGitの管理対象外です。
+
+## 今回の環境確認（2026-09-28）
+
+- Windows、Node.js v24.21.0、npm 11.19.0で依存関係を導入しました。
+- Three.js 0.186.1、Vite 8.3.1のインストール、`node --check main.js`、`npm run build` が成功しました。
+- 開発サーバーと公開用プレビューを起動し、HTMLとJavaScriptのHTTP応答、ブラウザーでの初期画面を確認しました。確認時のブラウザーログに警告・エラーはありませんでした。
+- モデルを使った操作・音の実機確認は未実施です。
+- アプリのコード、依存関係のバージョン、公開ワークフローは変更していません。GitHubへの送信・公開も行っていません。

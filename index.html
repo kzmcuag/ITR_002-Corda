@@ -24,10 +24,10 @@
     --itr-control-border: rgba(255,255,255,0.28);
     --itr-control-background: rgba(255,255,255,0.05);
     --itr-control-text: #bbbbbb;
-    --itr-active: #ffffff;
-    --itr-active-ui: #ffffff;
-    --itr-active-soft: rgba(255,255,255,0.12);
-    --itr-bow-glow: rgba(255,255,255,0.35);
+    --itr-active: #00ff00;
+    --itr-active-ui: #00ff00;
+    --itr-active-soft: rgba(0,255,0,0.12);
+    --itr-bow-glow: rgba(0,255,0,0.35);
 
     --itr-font: "Inter", Arial, sans-serif;
     --itr-ui-top: 26px;
@@ -92,7 +92,7 @@ html, body {
     cursor:pointer;
 }
 #replaceModel:hover{
-    color:var(--itr-text);
+    color:var(--itr-active-ui);
 }
 
 #dropMessage {
@@ -168,7 +168,7 @@ canvas {
     height:9px;
     border:0;
     border-radius:0;
-    background:#ffffff;
+    background:var(--itr-active-ui);
     cursor:pointer;
 }
 
@@ -177,7 +177,7 @@ canvas {
     height:9px;
     border:0;
     border-radius:0;
-    background:#ffffff;
+    background:var(--itr-active-ui);
     cursor:pointer;
 }
 
@@ -235,7 +235,7 @@ canvas {
 }
 .modeButton.active{
     border-color:var(--itr-active-ui);
-    color:var(--itr-text);
+    color:var(--itr-active-ui);
     background:var(--itr-active-soft);
 }
 #bowActivePoint{
