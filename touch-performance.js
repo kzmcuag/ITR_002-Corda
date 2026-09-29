@@ -12,6 +12,8 @@ export function installTouchPerformance(canvas, actions) {
     for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'lostpointercapture']) {
         canvas.addEventListener(type, event => {
             if (event.pointerType !== 'touch') return;
+            // View gestures pass through to OrbitControls without sounding notes.
+            if (actions.enabled && !actions.enabled()) return;
             event.preventDefault();
             event.stopImmediatePropagation();
             if (type === 'pointerdown') {

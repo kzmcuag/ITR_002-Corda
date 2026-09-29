@@ -42,3 +42,19 @@ test('one/two/three fingers, cancellation and mouse isolation',()=>{
     const before=calls.length; fire('pointerdown',4,'mouse'); assert.equal(calls.length,before);
     reset(); assert.equal(calls.at(-1),'reset');
 });
+
+test('View passes navigation events through and Play resumes without stale contacts',()=>{
+    const handlers={}; let enabled=true, sounded=0, blocked=0;
+    const reset=installTouchPerformance({addEventListener(t,h){handlers[t]=h;},setPointerCapture(){}},{
+        enabled:()=>enabled, start(){sounded++;}, reset(){}, pizz(){sounded++;}, arco(){sounded++;}
+    });
+    const event={pointerType:'touch',pointerId:1,clientX:10,clientY:20,preventDefault(){blocked++;},stopImmediatePropagation(){blocked++;}};
+    handlers.pointerdown(event); assert.ok(sounded>0);
+    reset(); enabled=false;
+    const before=sounded, previousBlocked=blocked;
+    for(const handler of Object.values(handlers)) handler(event);
+    assert.equal(sounded,before); assert.equal(blocked,previousBlocked);
+    enabled=true;
+    handlers.pointermove(event); assert.equal(sounded,before);
+    handlers.pointerdown(event); assert.ok(sounded>before);
+});

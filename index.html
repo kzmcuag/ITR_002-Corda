@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Corda v0.26.2</title>
+<title>Corda v0.27</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400&display=swap" rel="stylesheet">
@@ -303,10 +303,10 @@ canvas{touch-action:none;}
     #soundControls summary,#replaceModel,.modeButton{min-height:32px;}
 }
 
-.dualRange{position:relative;height:24px;background:linear-gradient(var(--itr-active-ui),var(--itr-active-ui)) center/100% 1px no-repeat;}
+.dualRange{position:relative;height:24px;background:linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,.35)) center/100% 1px no-repeat;}
 .dualRange input{position:absolute;inset:0;width:100%;height:24px;margin:0;appearance:none;background:transparent;pointer-events:none;}
-.dualRange input::-webkit-slider-thumb{appearance:none;width:8px;height:16px;background:var(--itr-active-ui);border:0;border-radius:0;pointer-events:auto;cursor:ew-resize;}
-.dualRange input::-moz-range-thumb{width:8px;height:16px;background:var(--itr-active-ui);border:0;border-radius:0;pointer-events:auto;cursor:ew-resize;}
+.dualRange input::-webkit-slider-thumb{appearance:none;width:1px;height:9px;background:var(--itr-active-ui);background-clip:padding-box;border:8px solid transparent;box-sizing:content-box;border-radius:0;pointer-events:auto;cursor:ew-resize;}
+.dualRange input::-moz-range-thumb{width:1px;height:9px;background:var(--itr-active-ui);background-clip:padding-box;border:8px solid transparent;box-sizing:content-box;border-radius:0;pointer-events:auto;cursor:ew-resize;}
 .dualRange input:focus{z-index:2;}
 .dualRange input:focus-visible{outline:1px solid var(--itr-text-muted);outline-offset:2px;}
 #pitchControls{width:var(--itr-ui-width);grid-template-columns:40px 1fr 52px;}
@@ -318,6 +318,8 @@ canvas{touch-action:none;}
     .mouseHelp{display:none;}.touchHelp{display:block;}
     #soundControls[open]{max-height:none;overflow:visible;}
 }
+#touchModeControls{display:none;position:fixed;right:16px;top:16px;z-index:40;gap:6px;background:var(--itr-background);}
+@media (pointer:coarse), (max-width:600px){#touchModeControls{display:flex;}#touchModeControls button{min-height:36px;min-width:52px;}}
 </style>
 </head>
 
@@ -325,9 +327,10 @@ canvas{touch-action:none;}
 <body>
 
 <button id="settingsToggle" type="button" aria-controls="info" aria-expanded="false">[setting]</button>
+<div id="touchModeControls" role="group" aria-label="Touch mode"><button id="playMode" type="button" class="modeButton active" aria-pressed="true">Play</button><button id="viewMode" type="button" class="modeButton" aria-pressed="false">View</button></div>
 <div id="info">
 
-<strong>CORDA v0.26.2</strong><br>
+<strong>CORDA v0.27</strong><br>
 
 <div class="mouseHelp">Hover / move: Pizz / Strum<br>
 1st click: Bow start<br>
@@ -335,7 +338,7 @@ canvas{touch-action:none;}
 Click in Arco: Remove Bow --&gt; Pizz<br>
 Right drag: Orbit<br>
 Middle drag: Pan<br>Wheel: Zoom</div>
-<div class="touchHelp">1 finger: Pizz / Strum<br>2 fingers: Arco</div>
+<div class="touchHelp" id="touchHelp">1 finger: Pizz / Strum<br>2 fingers: Arco</div>
 
 <div id="status">
 <div id="modelRow"><span id="fileStatus">Model: N/A</span><button id="replaceModel" type="button" hidden>Replace</button><button id="sampleModel" type="button">Sample</button></div>
@@ -369,8 +372,8 @@ Middle drag: Pan<br>Wheel: Zoom</div>
     <div class="spaceTitle">TONE</div>
     <div class="spaceRow">
         <label for="cutoffSlider">Cutoff</label>
-        <input id="cutoffSlider" type="range" min="0" max="100" value="100" step="1">
-        <span id="cutoffValue" class="spaceValue">Open</span>
+        <input id="cutoffSlider" type="range" min="0" max="100" value="50" step="1">
+        <span id="cutoffValue" class="spaceValue">1.1kHz</span>
     </div>
     <div class="spaceRow">
         <label for="resonanceSlider">Resonance</label>

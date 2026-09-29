@@ -82,12 +82,19 @@ test('completed voices disconnect and are removed from waveform updates',()=>{
  const osc=nodes.find(n=>n.kind==='oscillator'); osc.onended();
  assert.equal(run('activeVoices.size'),0);
 });
-test('Tone remains shared and defaults to bypass',()=>{
- const {run}=setup(); run('initAudio()');
+test('Tone remains shared and Open can bypass it',()=>{
+ const {run}=setup(); run('toneEnvelope.cutoff=100; initAudio()');
  assert.equal(run('toneDry.gain.value'),1); assert.equal(run('toneWet.gain.value'),0);
  run('toneEnvelope.cutoff=0; toneEnvelope.resonance=100; updateToneFilter()');
  assert.equal(run('toneFilter.frequency.events.at(-1)[1]'),80);
  assert.equal(run('toneFilter.Q.events.at(-1)[1]'),5.707);
+});
+
+test('Saw cutoff starts at the slider midpoint with the filter enabled',()=>{
+ const {run}=setup(); run('initAudio()');
+ assert.equal(run('toneEnvelope.cutoff'),50);
+ assert.ok(Math.abs(run('toneFilter.frequency.value')-80*Math.sqrt(200))<1e-6);
+ assert.equal(run('toneWet.gain.value'),1);
 });
 
 test('full mix including effects passes through fast compression and headroom',()=>{

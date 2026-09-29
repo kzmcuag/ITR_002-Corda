@@ -91,6 +91,9 @@ controls.enableZoom = true;
 controls.mouseButtons.LEFT = null;
 controls.mouseButtons.MIDDLE = THREE.MOUSE.PAN;
 controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
+controls.touches.ONE = THREE.TOUCH.ROTATE;
+controls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
+let touchMode = "play";
 
 renderer.domElement.addEventListener(
     "contextmenu",
@@ -189,9 +192,9 @@ let reverbWetGain = null;
 let reverbMix = 0.20;
 let delayMix = 0.13;
 
-// Neutral Tone defaults bypass the added shared filter.
+// Sawtooth starts at the midpoint of the Cutoff slider.
 const toneEnvelope = {
-    cutoff: 100,
+    cutoff: 50,
     resonance: 0
 };
 let toneInput = null;
@@ -1957,6 +1960,7 @@ function performPizzPick(event){
 renderer.domElement.addEventListener(
 "pointerdown",
 event=>{
+    if(event.pointerType === "touch") return;
 
     if(event.button !== 0)
         return;
@@ -1996,6 +2000,7 @@ event=>{
 renderer.domElement.addEventListener(
 "pointermove",
 event=>{
+    if(event.pointerType === "touch") return;
 
     // Do not perform while any mouse button is held.
     // Right-drag remains exclusively Orbit.
@@ -2038,7 +2043,8 @@ event=>{
 
 renderer.domElement.addEventListener(
 "pointerleave",
-()=>{
+event=>{
+    if(event.pointerType === "touch") return;
 
     hoverPreviousRay=null;
     contactingStrings.clear();
@@ -2564,6 +2570,7 @@ document.getElementById("replaceModel").addEventListener(
 );
 
 const resetTouch = installTouchPerformance(renderer.domElement, {
+    enabled(){ return touchMode === "play"; },
     start(){ initAudio(); },
     reset(){ resetDrawnBow(); hoverPreviousRay=null; contactingStrings.clear(); },
     pizz(point, first, kind){
@@ -2642,3 +2649,22 @@ settingsToggle.addEventListener("click",()=>{
     settingsToggle.textContent=open ? "[close]" : "[setting]";
     resetTouch();
 });
+
+for(const mode of ["play", "view"]){
+    document.getElementById(mode+"Mode").addEventListener("click",()=>{
+        if(touchMode === mode) return;
+        resetTouch();
+        // Cancel in-progress navigation so old fingers cannot leak across modes.
+        controls.disconnect();
+        controls.connect(renderer.domElement);
+        touchMode=mode;
+        for(const name of ["play","view"]){
+            const button=document.getElementById(name+"Mode");
+            button.classList.toggle("active",name===mode);
+            button.setAttribute("aria-pressed",String(name===mode));
+        }
+        document.getElementById("touchHelp").textContent=mode === "play"
+            ? "1 finger: Pizz / Strum · 2 fingers: Arco"
+            : "1 finger: Orbit · 2 fingers: Pan / Pinch zoom";
+    });
+}
