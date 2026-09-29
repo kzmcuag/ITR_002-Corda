@@ -3,4 +3,5 @@ node_modules/
 0_old/
 
 *.glb
+!public/models/test_plasticNumber.glb
 dist/

@@ -1,3 +1,5 @@
+import { collectPlayableEdges, filterEdgeRange } from "./model-edges.js";
+import { installTouchPerformance } from "./touch-performance.js";
 
 
 import * as THREE from "three";
@@ -84,10 +86,10 @@ const controls =
 controls.enableDamping = true;
 
 // Corda navigation: left = pluck/strum, right = orbit, wheel = zoom
-controls.enablePan = false;
+controls.enablePan = true;
 controls.enableZoom = true;
 controls.mouseButtons.LEFT = null;
-controls.mouseButtons.MIDDLE = null;
+controls.mouseButtons.MIDDLE = THREE.MOUSE.PAN;
 controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
 
 renderer.domElement.addEventListener(
@@ -125,6 +127,7 @@ scene.add(edgeGroup);
 
 function clearStrings(){
 
+    for(const line of strings){ line.geometry.dispose(); line.material.dispose(); }
     edgeGroup.clear();
 
     strings = [];
@@ -138,7 +141,7 @@ function clearStrings(){
 
 let referenceLength = 1.0;
 
-const referenceFrequency = 220;
+let referenceFrequency = 294;
 
 
 function lengthToFrequency(length){
@@ -185,6 +188,33 @@ let reverbWetGain = null;
 
 let reverbMix = 0.20;
 let delayMix = 0.13;
+
+// Neutral Tone defaults bypass the added shared filter.
+const toneEnvelope = {
+    cutoff: 100,
+    resonance: 0
+};
+let toneInput = null;
+let toneFilter = null;
+let toneDry = null;
+let toneWet = null;
+
+function cutoffFrequency(){
+    return 80 * Math.pow(200, toneEnvelope.cutoff / 100);
+}
+
+function updateToneFilter(immediate = false){
+    if(!toneFilter) return;
+    const bypass = toneEnvelope.cutoff === 100 && toneEnvelope.resonance === 0;
+    const set = (parameter, value)=>{
+        if(immediate) parameter.value = value;
+        else setAudioParamSmoothly(parameter, value);
+    };
+    set(toneFilter.frequency, Math.min(cutoffFrequency(), audioContext.sampleRate * 0.45));
+    set(toneFilter.Q, 0.707 + toneEnvelope.resonance * 0.05);
+    set(toneDry.gain, bypass || waveform === "sine" ? 1 : 0);
+    set(toneWet.gain, bypass || waveform === "sine" ? 0 : 1);
+}
 
 
 function createReverbImpulse(
@@ -247,6 +277,16 @@ function createReverbImpulse(
 
 
 function buildEffectBus(){
+
+    toneInput = audioContext.createGain();
+    toneFilter = audioContext.createBiquadFilter();
+    toneFilter.type = "lowpass";
+    toneDry = audioContext.createGain();
+    toneWet = audioContext.createGain();
+    toneInput.connect(toneDry);
+    toneInput.connect(toneFilter);
+    toneFilter.connect(toneWet);
+    updateToneFilter(true);
 
     masterGain =
         audioContext.createGain();
@@ -329,27 +369,31 @@ function buildEffectBus(){
     );
 
 
-    masterGain.connect(
-        audioContext.destination
-    );
+    // Catch overlapping notes and effect tails after the complete mix.
+    const outputCompressor = audioContext.createDynamicsCompressor();
+    outputCompressor.threshold.value = -12;
+    outputCompressor.knee.value = 6;
+    outputCompressor.ratio.value = 20;
+    outputCompressor.attack.value = 0;
+    outputCompressor.release.value = 0.15;
+    const outputHeadroom = audioContext.createGain();
+    outputHeadroom.gain.value = 0.8;
+    masterGain.connect(outputCompressor);
+    outputCompressor.connect(outputHeadroom);
+    outputHeadroom.connect(audioContext.destination);
+
+    // Shape the source before sending it to the existing SPACE effects.
+    for(const output of [toneDry, toneWet]){
+        output.connect(dryGain);
+        output.connect(delayNode);
+        output.connect(reverbNode);
+    }
 
 }
 
 
 function connectToEffectBus(node){
-
-    node.connect(
-        dryGain
-    );
-
-    node.connect(
-        delayNode
-    );
-
-    node.connect(
-        reverbNode
-    );
-
+    node.connect(toneInput);
 }
 
 
@@ -377,204 +421,76 @@ function initAudio(){
 
 
 // ==================================================
-// KARPLUS–STRONG
+// SHARED OSCILLATOR / FIXED ENVELOPES
 // ==================================================
 
-function pluck(frequency){
+const activeVoices = new Set();
+const arcoVoices = new Map();
+let waveform = "sawtooth";
 
-    initAudio();
-
-    // Avoid pathological frequencies
-
-    frequency =
-        THREE.MathUtils.clamp(
-            frequency,
-            30,
-            5000
-        );
-
-
-    const sampleRate =
-        audioContext.sampleRate;
-
-    const duration = 3;
-
-    const buffer =
-        audioContext.createBuffer(
-            1,
-            sampleRate * duration,
-            sampleRate
-        );
-
-    const data =
-        buffer.getChannelData(0);
-
-
-    const delay =
-        Math.max(
-            2,
-            Math.round(
-                sampleRate /
-                frequency
-            )
-        );
-
-
-    // excitation
-
-    for(
-        let i=0;
-        i<delay &&
-        i<data.length;
-        i++
-    ){
-
-        data[i] =
-            Math.random()*2-1;
-
-    }
-
-
-    // feedback loop
-
-    const decay = 0.996;
-
-    for(
-        let i=delay;
-        i<data.length;
-        i++
-    ){
-
-        const a =
-            data[i-delay];
-
-        const b =
-            data[
-                Math.max(
-                    0,
-                    i-delay-1
-                )
-            ];
-
-        data[i] =
-            decay *
-            0.5 *
-            (a+b);
-
-    }
-
-
-    const source =
-        audioContext
-        .createBufferSource();
-
-    source.buffer = buffer;
-
-
-    const gain =
-        audioContext
-        .createGain();
-
-    gain.gain.value = 0.22;
-
-
-    source.connect(gain);
-
-    // v0.6: route every string through the shared
-    // dry / delay / reverb bus instead of directly
-    // to the speakers.
-
-    connectToEffectBus(
-        gain
-    );
-
-    source.start();
-
+function setWaveform(value){
+    if(value !== "sawtooth" && value !== "sine") return;
+    waveform = value;
+    // Includes Pizz notes and release tails, not only contacted Arco strings.
+    for(const voice of activeVoices) voice.osc.type = value;
+    updateToneFilter();
 }
 
-
-
-// ==================================================
-// ARCO SYNTHESIS  (v0.7)
-//
-// A lightweight sustained bowed-string approximation:
-// oscillator + filtered noise excitation + resonant
-// filtering. Each contacted string owns one voice.
-// ==================================================
-
-const arcoVoices = new Map();
-
-function startArco(string){
-
-    if(arcoVoices.has(string))
-        return;
-
+function createVoice(frequency, mode){
     initAudio();
-
-    const frequency =
-        THREE.MathUtils.clamp(
-            lengthToFrequency(
-                string.userData.length
-            ),
-            30,
-            5000
-        );
-
-    const now =
-        audioContext.currentTime;
-
-    const osc =
-        audioContext.createOscillator();
-
-    osc.type = "sawtooth";
-    osc.frequency.value = frequency;
-
-    const bodyFilter =
-        audioContext.createBiquadFilter();
-
+    const now = audioContext.currentTime;
+    const osc = audioContext.createOscillator();
+    osc.type = waveform;
+    osc.frequency.value = THREE.MathUtils.clamp(frequency, 30, 5000);
+    const bodyFilter = audioContext.createBiquadFilter();
     bodyFilter.type = "lowpass";
-    bodyFilter.frequency.value =
-        Math.min(7000, frequency*5+900);
-
+    bodyFilter.frequency.value = Math.min(7000, osc.frequency.value*5+900);
     bodyFilter.Q.value = 1.2;
-
-    const voiceGain =
-        audioContext.createGain();
-
-    voiceGain.gain.setValueAtTime(
-        0.0001,
-        now
-    );
-
-    voiceGain.gain.exponentialRampToValueAtTime(
-        0.00012,
-        now+0.10
-    );
-
+    const voiceGain = audioContext.createGain();
+    // Never start an oscillator at the GainNode default (unity gain).
+    voiceGain.gain.value = 0;
     osc.connect(bodyFilter);
     bodyFilter.connect(voiceGain);
     connectToEffectBus(voiceGain);
-
+    const voice = { osc, bodyFilter, voiceGain, baseFrequency: osc.frequency.value / referenceFrequency,
+        smoothedExcitation: 0, released: false };
+    activeVoices.add(voice);
+    osc.onended = ()=>{
+        activeVoices.delete(voice);
+        osc.disconnect();
+        bodyFilter.disconnect();
+        voiceGain.disconnect();
+    };
+    if(mode === "arco"){
+        voiceGain.gain.setValueAtTime(0.0001, now);
+        voiceGain.gain.exponentialRampToValueAtTime(0.00012, now + 0.10);
+    }
     osc.start();
+    return voice;
+}
 
-    arcoVoices.set(
-        string,
-        {
-            osc,
-            bodyFilter,
-            voiceGain,
-            smoothedExcitation:0
-        }
-    );
+function pluck(frequency){
+    const voice = createVoice(frequency, "pizz");
+    const now = audioContext.currentTime;
+    // Short, fixed pluck envelope; avoid long tails accumulating on strums.
+    const peak = 0.12;
+    voice.voiceGain.gain.setValueAtTime(0, now);
+    voice.voiceGain.gain.linearRampToValueAtTime(peak, now + 0.002);
+    voice.voiceGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.58);
+    voice.voiceGain.gain.linearRampToValueAtTime(0, now + 0.60);
+    voice.osc.stop(now + 0.62);
+}
 
-    string.material.color.set(
-        ITR_DESIGN.active
-    );
-
+function startArco(string){
+    if(arcoVoices.has(string)) return;
+    const frequency = lengthToFrequency(string.userData.length);
+    const voice = createVoice(frequency, "arco");
+    arcoVoices.set(string, voice);
+    string.material.color.set(ITR_DESIGN.active);
     document.getElementById("lengthStatus").textContent =
         "Length: " + string.userData.length.toFixed(4);
     document.getElementById("frequencyStatus").textContent =
-        "Frequency: " + frequency.toFixed(2) + " Hz";
+        "Frequency: " + voice.osc.frequency.value.toFixed(2) + " Hz";
 }
 
 function stopArco(string){
@@ -697,108 +613,37 @@ function stopAllArco(){
 // EDGE EXTRACTION
 // ==================================================
 
+let modelSegments=[];
+
 function extractEdges(object){
-
-    clearStrings();
-
-
-    object.updateMatrixWorld(true);
-
-
-    object.traverse(child=>{
-
-        if(!child.isMesh)
-            return;
-
-
-        const edgeGeometry =
-            new THREE.EdgesGeometry(
-                child.geometry,
-                15
-            );
-
-
-        const position =
-            edgeGeometry.attributes.position;
-
-
-        for(
-            let i=0;
-            i<position.count;
-            i+=2
-        ){
-
-            const a =
-                new THREE.Vector3()
-                .fromBufferAttribute(
-                    position,
-                    i
-                );
-
-            const b =
-                new THREE.Vector3()
-                .fromBufferAttribute(
-                    position,
-                    i+1
-                );
-
-
-            // local → world
-
-            a.applyMatrix4(
-                child.matrixWorld
-            );
-
-            b.applyMatrix4(
-                child.matrixWorld
-            );
-
-
-            const length =
-                a.distanceTo(b);
-
-
-            if(length < 0.000001)
-                continue;
-
-
-            const geometry =
-                new THREE.BufferGeometry()
-                .setFromPoints([a,b]);
-
-
-            const material =
-                new THREE.LineBasicMaterial({
-                    color:ITR_DESIGN.string
-                });
-
-
-            const line =
-                new THREE.Line(
-                    geometry,
-                    material
-                );
-
-
-            line.userData.length =
-                length;
-
-
-            edgeGroup.add(line);
-
-            strings.push(line);
-
-        }
-
-    });
-
-
-    autoReferenceLength();
-
+    const { segments } = collectPlayableEdges(object);
+    if(!segments.length) throw new Error("No playable edges remain after detail filtering.");
+    modelSegments=segments;
+    document.getElementById("edgeLower").value=5;
+    document.getElementById("edgeUpper").value=100;
+    applyEdgeRange();
     fitCameraToStrings();
-
 }
 
+function applyEdgeRange(){
+    const lower=Number(document.getElementById("edgeLower").value);
+    const upper=Number(document.getElementById("edgeUpper").value);
+    document.getElementById("edgeRangeValue").textContent=lower+"–"+upper+"%";
+    const segments=filterEdgeRange(modelSegments,lower,upper);
+    resetTouch();
+    clearStrings();
+    for(const {a,b,length} of segments){
+        const line = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([a,b]),
+            new THREE.LineBasicMaterial({color:ITR_DESIGN.string})
+        );
+        line.userData.length=length;
+        edgeGroup.add(line); strings.push(line);
+    }
+    autoReferenceLength();
+    document.getElementById("lengthStatus").textContent="Length: —";
+    document.getElementById("frequencyStatus").textContent="Frequency: —";
+}
 
 // ==================================================
 // AUTOMATIC REFERENCE LENGTH
@@ -820,7 +665,7 @@ function autoReferenceLength(){
         );
 
 
-    // median edge = 220 Hz
+    // median edge = 294 Hz
 
     referenceLength =
         lengths[
@@ -976,7 +821,8 @@ const performanceControls =
         "performanceControls"
     );
 
-[spaceControls, performanceControls]
+[document.getElementById("pitchControls"), document.getElementById("edgeRangeControls"), document.getElementById("soundControls"), spaceControls, performanceControls,
+ document.getElementById("toneControls")]
 .filter(Boolean)
 .forEach(panel=>{
 
@@ -1016,6 +862,22 @@ panel.addEventListener(
 
 }); // end UI panels
 
+const waveformButtons = [
+    [document.getElementById("sawtoothButton"), "sawtooth"],
+    [document.getElementById("sineButton"), "sine"]
+];
+for(const [button, waveform] of waveformButtons){
+    button.addEventListener("click", ()=>{
+        setWaveform(waveform);
+        document.getElementById("toneControls").hidden = waveform === "sine";
+        for(const [other, value] of waveformButtons){
+            const selected = value === waveform;
+            other.classList.toggle("active", selected);
+            other.setAttribute("aria-pressed", String(selected));
+        }
+    });
+}
+
 
 function setAudioParamSmoothly(
     parameter,
@@ -1037,7 +899,20 @@ function setAudioParamSmoothly(
 
 }
 
-
+// Tone controls are shared by both fixed-envelope voices.
+for(const name of ["cutoff", "resonance"]){
+    const slider = document.getElementById(name+"Slider");
+    const display = document.getElementById(name+"Value");
+    slider.addEventListener("input", ()=>{
+        toneEnvelope[name] = Number(slider.value);
+        display.textContent = name === "resonance" ? slider.value+"%"
+            : toneEnvelope.cutoff === 100 ? "Open"
+            : cutoffFrequency() >= 1000 ? (cutoffFrequency()/1000).toFixed(1)+"kHz"
+            : Math.round(cutoffFrequency())+"Hz";
+        slider.setAttribute("aria-valuetext", display.textContent);
+        updateToneFilter();
+    });
+}
 reverbSlider.addEventListener(
 "input",
 ()=>{
@@ -2023,6 +1898,62 @@ function continuousPickHit(
 
 let hoverPreviousRay = null;
 
+function performPizzPick(event){
+    const currentRay=rayFromEvent(event);
+
+    if(!hoverPreviousRay){
+
+        hoverPreviousRay=currentRay;
+        return;
+    }
+
+    const metrics=modelMetrics();
+    const crossed=[];
+
+    for(const string of strings){
+
+        const hit=continuousPickHit(
+            string,
+            hoverPreviousRay,
+            currentRay,
+            metrics
+        );
+
+        if(hit){
+
+            crossed.push({
+                string,
+                order:hit.order,
+                distanceSq:hit.distanceSq
+            });
+        }
+    }
+
+    crossed.sort(
+        (a,b)=>
+            a.order-b.order ||
+            a.distanceSq-b.distanceSq
+    );
+
+    const currentContacts=
+        new Set(
+            crossed.map(hit=>hit.string)
+        );
+
+    // Same contact-enter principle as the stable Strum:
+    // remaining over one string does not retrigger it.
+    for(const hit of crossed){
+
+        if(!contactingStrings.has(hit.string)){
+            soundString(hit.string);
+        }
+    }
+
+    contactingStrings=currentContacts;
+    hoverPreviousRay=currentRay;
+}
+
+
 renderer.domElement.addEventListener(
 "pointerdown",
 event=>{
@@ -2101,58 +2032,7 @@ event=>{
     // PIZZ / STRUM BY HOVER
     // --------------------------------------------------
 
-    const currentRay=rayFromEvent(event);
-
-    if(!hoverPreviousRay){
-
-        hoverPreviousRay=currentRay;
-        return;
-    }
-
-    const metrics=modelMetrics();
-    const crossed=[];
-
-    for(const string of strings){
-
-        const hit=continuousPickHit(
-            string,
-            hoverPreviousRay,
-            currentRay,
-            metrics
-        );
-
-        if(hit){
-
-            crossed.push({
-                string,
-                order:hit.order,
-                distanceSq:hit.distanceSq
-            });
-        }
-    }
-
-    crossed.sort(
-        (a,b)=>
-            a.order-b.order ||
-            a.distanceSq-b.distanceSq
-    );
-
-    const currentContacts=
-        new Set(
-            crossed.map(hit=>hit.string)
-        );
-
-    // Same contact-enter principle as the stable Strum:
-    // remaining over one string does not retrigger it.
-    for(const hit of crossed){
-
-        if(!contactingStrings.has(hit.string)){
-            soundString(hit.string);
-        }
-    }
-
-    contactingStrings=currentContacts;
-    hoverPreviousRay=currentRay;
+    performPizzPick(event);
 });
 
 
@@ -2181,6 +2061,8 @@ event=>{
 });
 
 
+let modelLoadToken=0;
+
 function loadModelFile(file){
 
     if(!file)
@@ -2199,12 +2081,15 @@ function loadModelFile(file){
         return;
     }
 
+    const token=++modelLoadToken;
     const url =
         URL.createObjectURL(file);
 
     loader.load(
         url,
         gltf=>{
+            if(token !== modelLoadToken){ URL.revokeObjectURL(url); return; }
+            try {
             extractEdges(
                 gltf.scene
             );
@@ -2217,6 +2102,7 @@ function loadModelFile(file){
             )
             .style.display = "none";
 
+            } catch(error){ console.error(error); alert("No playable edges in this model."); }
             URL.revokeObjectURL(url);
         },
         undefined,
@@ -2287,7 +2173,7 @@ modelFileInput.addEventListener(
 // even before the mouse button is pressed.
 window.addEventListener(
     "pointermove",
-    event=>updateBowVisual(event)
+    event=>{ if(event.pointerType !== "touch") updateBowVisual(event); }
 );
 
 window.addEventListener(
@@ -2673,7 +2559,86 @@ document.getElementById("replaceModel").addEventListener(
     "click",
     event=>{
         event.stopPropagation();
-        resetModelForReplacement();
+        modelFileInput.click();
     }
 );
 
+const resetTouch = installTouchPerformance(renderer.domElement, {
+    start(){ initAudio(); },
+    reset(){ resetDrawnBow(); hoverPreviousRay=null; contactingStrings.clear(); },
+    pizz(point, first, kind){
+        const event={clientX:point.x,clientY:point.y};
+        if(first){
+            hoverPreviousRay=rayFromEvent(event);
+            if(kind === "down"){
+                const hit=raycaster.intersectObjects(strings, false)[0];
+                if(hit){ soundString(hit.object); contactingStrings.add(hit.object); }
+            }
+            return;
+        }
+        performPizzPick(event);
+    },
+    arco(points, first){
+        const now=performance.now();
+        const middle={x:(points[0].x+points[1].x)/2,y:(points[0].y+points[1].y)/2};
+        const elapsed=bowLastSample ? Math.max(0.001,(now-bowLastSample.t)/1000) : 1;
+        bowVelocityPxPerSec=first ? 0 : Math.max(
+            Math.hypot(points[0].x-bowPointA.x,points[0].y-bowPointA.y),
+            Math.hypot(points[1].x-bowPointB.x,points[1].y-bowPointB.y)
+        )/elapsed;
+        bowPointA={...points[0]}; bowPointB={...points[1]};
+        bowDrawStage=2; arcoPointerActive=true;
+        bowLastSample={...middle,t:now};
+        setBowElementFromPoints(bowPointA,bowPointB);
+    }
+});
+window.addEventListener("blur", resetTouch);
+document.addEventListener("visibilitychange", ()=>{if(document.hidden) resetTouch();});
+
+// Latest requested model wins, including Sample and file replacements.
+function loadSample(){
+    const token=++modelLoadToken;
+    loader.load(import.meta.env.BASE_URL+"models/test_plasticNumber.glb", gltf=>{
+        if(token !== modelLoadToken) return;
+        try {
+            extractEdges(gltf.scene);
+            setLoadedFileStatus("test_plasticNumber.glb");
+            dropMessage.style.display="none";
+        }catch(error){ console.error(error); alert("Could not load sample model."); }
+    }, undefined, error=>{
+        if(token !== modelLoadToken) return;
+        console.error(error); alert("Could not load sample model.");
+    });
+}
+document.getElementById("sampleModel").addEventListener("click",event=>{
+    event.stopPropagation(); loadSample();
+});
+for(const id of ["edgeLower","edgeUpper"]){
+    document.getElementById(id).addEventListener("input",()=>{
+        const lower=document.getElementById("edgeLower"), upper=document.getElementById("edgeUpper");
+        if(Number(lower.value)>Number(upper.value)){
+            if(id === "edgeLower") upper.value=lower.value;
+            else lower.value=upper.value;
+        }
+        applyEdgeRange();
+    });
+}
+loadSample();
+
+document.getElementById("pitchSlider").addEventListener("input",event=>{
+    referenceFrequency=Number(event.target.value);
+    document.getElementById("pitchValue").textContent=referenceFrequency+" Hz";
+    for(const voice of activeVoices){
+        const frequency=THREE.MathUtils.clamp(voice.baseFrequency*referenceFrequency,30,5000);
+        setAudioParamSmoothly(voice.osc.frequency,frequency);
+        setAudioParamSmoothly(voice.bodyFilter.frequency,Math.min(7000,frequency*5+900));
+    }
+    document.getElementById("frequencyStatus").textContent="Frequency: —";
+});
+const settingsToggle=document.getElementById("settingsToggle");
+settingsToggle.addEventListener("click",()=>{
+    const open=document.body.classList.toggle("settingsOpen");
+    settingsToggle.setAttribute("aria-expanded",String(open));
+    settingsToggle.textContent=open ? "[close]" : "[setting]";
+    resetTouch();
+});

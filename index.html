@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Corda v0.25 — Inter / Sample Spacing</title>
-
+<title>Corda v0.26.2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400&display=swap" rel="stylesheet">
+
 
 <style>
 
@@ -29,7 +29,7 @@
     --itr-active-soft: rgba(0,255,0,0.12);
     --itr-bow-glow: rgba(0,255,0,0.35);
 
-    --itr-font: "Inter", Arial, sans-serif;
+    --itr-font: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     --itr-ui-top: 26px;
     --itr-ui-left: 28px;
     --itr-ui-width: 220px;
@@ -78,20 +78,20 @@ html, body {
     align-items:baseline;
     gap:12px;
 }
-#replaceModel{
+#replaceModel, #sampleModel{
     appearance:none;
     border:0;
     padding:0;
     margin:0;
     background:none;
-    color:var(--itr-text-muted);
+    color:var(--itr-active-ui);
     font:inherit;
     font-size:inherit;
     text-decoration:underline;
     text-underline-offset:2px;
     cursor:pointer;
 }
-#replaceModel:hover{
+#replaceModel:hover, #sampleModel:hover{
     color:var(--itr-active-ui);
 }
 
@@ -127,7 +127,8 @@ canvas {
 }
 
 
-#spaceControls{
+#spaceControls,
+#toneControls{
     margin-top:18px;
     padding-top:0;
     border-top:0;
@@ -193,6 +194,34 @@ canvas {
     opacity:0.8;
 }
 
+#soundControls{
+    margin-top:18px;
+    width:var(--itr-ui-width);
+}
+#soundControls[open]{
+    max-height:calc(100vh - 290px);
+    overflow-y:auto;
+}
+#soundControls summary{
+    cursor:pointer;
+    font-size:var(--itr-section-size);
+    letter-spacing:0.14em;
+}
+#soundControls summary:focus-visible{
+    outline:1px solid var(--itr-active-ui);
+    outline-offset:4px;
+}
+#soundControls input[type="range"]{
+    touch-action:none;
+}
+.waveformControls{
+    margin-top:18px;
+}
+
+#toneControls .spaceRow{
+    grid-template-columns:64px 1fr 58px;
+}
+
 
 /* v0.6.2: UI controls must receive pointer input before the 3D canvas. */
 #info{
@@ -256,27 +285,98 @@ canvas {
     box-shadow:0 0 5px var(--itr-bow-glow);
 }
 
+[hidden]{display:none !important;}
+#projectName{font-family:"Inter",Arial,sans-serif;position:fixed;right:max(20px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));font-size:12px;color:var(--itr-text-muted);pointer-events:none;z-index:25;}
+canvas{touch-action:none;}
+.touchHelp{display:none;}
+#fileStatus{overflow-wrap:anywhere;min-width:0;}
+#modelRow{max-width:var(--itr-ui-width);}
+#edgeRangeControls{margin-top:10px;width:var(--itr-ui-width);}
+#edgeRangeControls .spaceRow{grid-template-columns:32px 1fr;}
+#edgeRangeValue{float:right;}
+#edgeRangeControls input{touch-action:none;}
+@media (pointer:coarse){
+    :root{--itr-ui-top:16px;--itr-ui-left:16px;}
+    .mouseHelp{display:none;}.touchHelp{display:block;}
+    #info{max-height:calc(100dvh - 60px);overflow-y:auto;max-width:calc(100vw - 32px);}
+    #soundControls input[type="range"]{height:24px;background:linear-gradient(rgba(255,255,255,.35),rgba(255,255,255,.35)) center/100% 1px no-repeat;}
+    #soundControls summary,#replaceModel,.modeButton{min-height:32px;}
+}
+
+.dualRange{position:relative;height:24px;background:linear-gradient(var(--itr-active-ui),var(--itr-active-ui)) center/100% 1px no-repeat;}
+.dualRange input{position:absolute;inset:0;width:100%;height:24px;margin:0;appearance:none;background:transparent;pointer-events:none;}
+.dualRange input::-webkit-slider-thumb{appearance:none;width:8px;height:16px;background:var(--itr-active-ui);border:0;border-radius:0;pointer-events:auto;cursor:ew-resize;}
+.dualRange input::-moz-range-thumb{width:8px;height:16px;background:var(--itr-active-ui);border:0;border-radius:0;pointer-events:auto;cursor:ew-resize;}
+.dualRange input:focus{z-index:2;}
+.dualRange input:focus-visible{outline:1px solid var(--itr-text-muted);outline-offset:2px;}
+#pitchControls{width:var(--itr-ui-width);grid-template-columns:40px 1fr 52px;}
+#settingsToggle{display:none;position:fixed;left:16px;top:16px;z-index:40;font:inherit;font-size:12px;color:var(--itr-active-ui);background:var(--itr-background);border:0;padding:8px;}
+@media (pointer:coarse), (max-width:600px){
+    #settingsToggle{display:block;}
+    #info{display:none;top:56px;left:16px;padding:12px;background:rgba(17,17,17,.96);max-height:calc(100dvh - 120px);overflow-y:auto;max-width:calc(100vw - 56px);}
+    body.settingsOpen #info{display:block;}
+    .mouseHelp{display:none;}.touchHelp{display:block;}
+    #soundControls[open]{max-height:none;overflow:visible;}
+}
 </style>
 </head>
 
 
 <body>
 
+<button id="settingsToggle" type="button" aria-controls="info" aria-expanded="false">[setting]</button>
 <div id="info">
 
-<strong>CORDA v0.25</strong><br>
+<strong>CORDA v0.26.2</strong><br>
 
-Hover / move: Pizz / Strum<br>
+<div class="mouseHelp">Hover / move: Pizz / Strum<br>
 1st click: Bow start<br>
-2nd click: Bow end → Arco<br>
-Click in Arco: Remove Bow → Pizz<br>
+2nd click: Bow end --&gt; Arco<br>
+Click in Arco: Remove Bow --&gt; Pizz<br>
 Right drag: Orbit<br>
-Wheel: Zoom
+Middle drag: Pan<br>Wheel: Zoom</div>
+<div class="touchHelp">1 finger: Pizz / Strum<br>2 fingers: Arco</div>
 
 <div id="status">
-<div id="modelRow"><span id="fileStatus">Model: N/A</span><button id="replaceModel" type="button" hidden>Replace</button></div>
+<div id="modelRow"><span id="fileStatus">Model: N/A</span><button id="replaceModel" type="button" hidden>Replace</button><button id="sampleModel" type="button">Sample</button></div>
+<div id="edgeRangeControls">
+    <div class="spaceTitle">EDGE RANGE <span id="edgeRangeValue">5–100%</span></div>
+    <div class="dualRange" role="group" aria-label="Edge length range">
+        <input id="edgeLower" type="range" min="0" max="100" value="5" aria-label="Minimum edge length percentile">
+        <input id="edgeUpper" type="range" min="0" max="100" value="100" aria-label="Maximum edge length percentile">
+    </div>
+</div>
+<div id="pitchControls" class="spaceRow">
+    <label for="pitchSlider">Pitch</label>
+    <input id="pitchSlider" type="range" min="110" max="440" step="1" value="294" aria-label="Reference pitch">
+    <span id="pitchValue">294 Hz</span>
+</div>
 <div id="lengthStatus">Length: —</div>
 <div id="frequencyStatus">Frequency: —</div>
+</div>
+
+<details id="soundControls">
+<summary>SOUND</summary>
+<div class="waveformControls">
+    <div class="spaceTitle">WAVEFORM</div>
+    <div class="modeToggle" role="group" aria-label="Waveform (Pizz and Arco)">
+        <button id="sawtoothButton" class="modeButton active" type="button" aria-pressed="true">Sawtooth</button>
+        <button id="sineButton" class="modeButton" type="button" aria-pressed="false">Sine</button>
+    </div>
+</div>
+
+<div id="toneControls">
+    <div class="spaceTitle">TONE</div>
+    <div class="spaceRow">
+        <label for="cutoffSlider">Cutoff</label>
+        <input id="cutoffSlider" type="range" min="0" max="100" value="100" step="1">
+        <span id="cutoffValue" class="spaceValue">Open</span>
+    </div>
+    <div class="spaceRow">
+        <label for="resonanceSlider">Resonance</label>
+        <input id="resonanceSlider" type="range" min="0" max="100" value="0" step="1">
+        <span id="resonanceValue" class="spaceValue">0%</span>
+    </div>
 </div>
 
 <div id="spaceControls">
@@ -314,10 +414,12 @@ Wheel: Zoom
         >13%</span>
     </div>
 </div>
+</details>
 
 </div>
 
 
+<div id="projectName">Instrumentarium</div>
 <div id="bow"></div>
 <div id="bowActivePoint"></div>
 

@@ -1,0 +1,40 @@
+<!doctype html><meta charset="utf-8"><title>Corda audio peak test</title>
+<pre id="result">Rendering…</pre>
+<script type="module">
+try {
+    const source = await (await fetch('../main.js')).text();
+    const audio = source.slice(source.indexOf('let audioContext ='), source.indexOf('function extractEdges('));
+    const smoothing = source.slice(source.indexOf('function setAudioParamSmoothly('), source.indexOf('// Tone controls'));
+    const results = [];
+    for (const wave of ['sawtooth', 'sine']) {
+        for (const dense of [false, true]) {
+            const context = new OfflineAudioContext(2, 44100 * 3, 44100);
+            let time = 0;
+            const proxy = new Proxy(context, { get(target, key) {
+                if (key === 'currentTime') return time;
+                if (key === 'state') return 'running';
+                const value = Reflect.get(target, key, target);
+                return typeof value === 'function' ? value.bind(target) : value;
+            }});
+            const api = new Function('window', 'THREE', 'const referenceFrequency=294;\n' + audio + smoothing + '\nreturn { pluck, setWaveform, initAudio, configure(){reverbMix=0.5;delayMix=0.5;toneEnvelope.cutoff=55;toneEnvelope.resonance=100;} };')(
+                { AudioContext: function() { return proxy; } },
+                { MathUtils: { clamp: (x, min, max) => Math.max(min, Math.min(max, x)) } }
+            );
+            api.configure(); api.initAudio(); api.setWaveform(wave);
+            for (let i = 0; i < 64; i++) {
+                time = dense ? 0 : i * 0.015;
+                api.pluck(110 * Math.pow(2, (i % 24) / 12));
+            }
+            const buffer = await context.startRendering();
+            let peak = 0, clipped = 0;
+            for (let ch = 0; ch < 2; ch++) for (const value of buffer.getChannelData(ch)) {
+                if (!Number.isFinite(value)) throw new Error('Non-finite audio');
+                peak = Math.max(peak, Math.abs(value));
+                if (Math.abs(value) >= 1) clipped++;
+            }
+            results.push({ wave, pattern: dense ? '64 simultaneous' : '64 rapid notes', peak, clipped, pass: peak < 1 });
+        }
+    }
+    document.getElementById('result').textContent = JSON.stringify(results, null, 2);
+} catch (error) { document.getElementById('result').textContent = 'FAIL: ' + error.stack; }
+</script>
