@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Corda v0.27</title>
+<title>Corda v0.27.1</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400&display=swap" rel="stylesheet">
@@ -330,7 +330,7 @@ canvas{touch-action:none;}
 <div id="touchModeControls" role="group" aria-label="Touch mode"><button id="playMode" type="button" class="modeButton active" aria-pressed="true">Play</button><button id="viewMode" type="button" class="modeButton" aria-pressed="false">View</button></div>
 <div id="info">
 
-<strong>CORDA v0.27</strong><br>
+<strong>CORDA v0.27.1</strong><br>
 
 <div class="mouseHelp">Hover / move: Pizz / Strum<br>
 1st click: Bow start<br>
@@ -429,7 +429,9 @@ Middle drag: Pan<br>Wheel: Zoom</div>
 <div id="dropMessage" role="button" tabindex="0" aria-label="Load GLB or GLTF model">
 Drop .glb / .gltf here<br>or click to select a file
 </div>
-<input id="modelFileInput" type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" hidden>
+<!-- Do not filter native pickers: iPadOS may not recognize GLB/glTF types.
+     loadModelFile validates the extension and GLTFLoader parses the contents. -->
+<input id="modelFileInput" type="file" hidden>
 
 
 <script type="module" src="./main.js"></script>
